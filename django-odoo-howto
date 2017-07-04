@@ -1,0 +1,107 @@
+downloaded community odoo from source (couldn't clone bad wifi, had to download from https://github.com/odoo/odoo)
+========
+downloaded postgres
+
+https://www.odoo.com/documentation/10.0/setup/install.html#setup-install-source
+
+had to do some stuff...
+
+========
+
+failed to install pgadmin :(
+
+==========
+back to https://www.odoo.com/documentation/10.0/setup/install.html#setup-install-source
+
+made a postgres user of my linux name 'aiden'
+
+
+
+djoodo/
+
+    pulse/ (django app installed with django-admin)
+
+    odoo10/
+
+
+made venv in odoo folder, pip install requirements.txt, installed ones that didn't work
+
+
+$ python odoo-bin 
+
+opened odoo in the browser and installed a few important apps
+
+=========
+
+making connection between openerp and django
+https://www.youtube.com/watch?v=goh6swXRYns
+https://www.odoo.com/documentation/9.0/api_integration.html
+
+
+before trying to go django--> odoo10 with xmlrpclib, i will try to make a simple script to create a product_product in odoo
+
+file is in 
+
+djoodo/
+
+    xmlrpx_example.py
+
+
+==========
+setting up pycharm
+
+open the 'djoodo' as my project
+
+'edit-configurations'
+
+for odoo ... python runner with Script: odoo-bin , Working Directory: /home/aiden/djoodo/odoo10
+
+but I need it to run with the odoo virtualenvironment
+
+so File - Settings - Project:djoodoo - Project Interpreter - create virtualenv 'odoo-venv'
+
+create it in /home/aiden/djoodo/odoo10
+
+go into command terminal and install requirements in that new virtualenv and delete my old one...
+aiden@aiden-home:~/djoodo/odoo10$ source odoo-venv/bin/activate
+
+pip install -r requirements.txt
+
+===========
+
+
+
+
+=======
+django superuser is aiden w pass pulse123
+this is also the username and password for the django 'pulse' db (see django settings file)
+odoo user is odoo w password odoo (this is what is needed for the xmlrpc)
+
+====
+you can only specify one port on postgres conf - but you can have different listen-addresses
+
+so you could make postgres.conf file like this
+iron-aiden@ironaiden-X550LD:/etc/postgresql/9.5/main$ sudo nano postgresql.conf
+---
+listen_addresses = '127.0.0.1,SOME-OTHER-IP'              # what IP address(es) t$
+                                        # comma-separated list of addresses;
+                                        # defaults to 'localhost'; use '*' for $
+                                        # (change requires restart)
+port = 5432   
+
+
+----
+where 127.0.0.1 will be openerp and odoo
+and 192.168.0.1 will be django
+==============
+
+xmlrpc is from django to odoo - but you can Read from odoo AND you can write to odoo database
+so it is effectively both ways
+
+IS THRE ANY CASE WHERE SOMTHING MIGHT HAPPEN IN erp THAT WE WOULD NEED TO HAVE UPDATED IMMEDIATELY IN DJANGO?
+
+I DON'T THINK SO... I THINK THE ERP SHOULD MAINLY BE LIKE ACCOUNTING (NOT THE HEART - BUT THE STOMACH -  EVERYTHING INTO IT) 
+
+
+
+

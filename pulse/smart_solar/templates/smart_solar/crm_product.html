@@ -1,0 +1,129 @@
+
+{% extends 'base.html' %} <!-- not app-specific base -->
+
+
+
+{% block content %}
+
+
+ <div class="page-header">   <h1>{{title}}<small></small></h1> </div>
+
+
+<div class="row">
+  <div class="col-md-6">
+
+      <h2>Product Info</h2>
+
+      <form method="POST" action="">
+    {% csrf_token %}
+
+    {% for field in form %}
+    <div class="form-group">
+        {{ field.errors }}
+      {{ field.label_tag }}
+        {{ field }}
+        {% if field.help_text %}
+        <p class="help">{{ field.help_text|safe }}</p>
+        {% endif %}
+    </div>
+
+{% endfor %}
+
+
+
+  <button type="submit" class="btn btn-default">Submit</button>
+</form>
+
+
+  </div>
+  <div class="col-md-6">
+
+      {% if crm_product %}
+       <h2>Product History</h2>
+
+
+     <table id="cptable" class="display" width="100%" cellspacing="0">
+        <thead>
+            <tr>
+
+                <!--<th>Product</th>-->
+                <th>CRM</th>
+                <th>Start Date</th>
+                <th>Enable State</th>
+                <th>Condition</th>
+                <!--<th>Serial Number</th>-->
+                <!--<th>IMEI</th>-->
+                <th>Active</th>
+
+            </tr>
+        </thead>
+        <!--<tfoot>-->
+            <!--<tr>-->
+
+            <!--</tr>-->
+        <!--</tfoot>-->
+        <tbody>
+            <tr>
+
+            </tr>
+
+        </tbody>
+    </table>
+        {% endif %}
+
+
+
+
+
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-12">
+       <h2>Actions</h2>
+
+
+           <button type="button" class="btn btn-default btn-lg">
+  <span class="glyphicon glyphicon-star" aria-hidden="true"></span> Force Enable
+</button>
+
+
+           <button type="button" class="btn btn-default btn-lg">
+  <span class="glyphicon glyphicon-star" aria-hidden="true"></span> Force Disable
+</button>
+
+
+               <button type="button" class="btn btn-default btn-lg">
+  <span class="glyphicon glyphicon-star" aria-hidden="true"></span> Mark as Damaged
+</button>
+
+
+                    <button type="button" class="btn btn-default btn-lg">
+  <span class="glyphicon glyphicon-star" aria-hidden="true"></span> Mark as Fixed
+</button>
+
+      <!-- should change active to False -->
+                          <button type="button" class="btn btn-default btn-lg">
+  <span class="glyphicon glyphicon-star" aria-hidden="true"></span> Repo
+</button>
+
+
+
+
+
+
+  </div>
+</div>
+
+
+
+{% endblock %}
+
+{% block js %}
+    var oTable = $('#cptable').dataTable({
+        // ...
+        "processing": true,
+        "serverSide": true,
+        "ajax": "{% url 'crm_product_list_json' 'cp' crm_product_id %}"
+    });
+    // ...
+{% endblock %}

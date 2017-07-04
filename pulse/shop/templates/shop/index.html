@@ -1,0 +1,59 @@
+
+{% extends 'base.html' %} <!-- not app-specific base -->
+
+
+
+{% block content %}
+
+ <div class="page-header">   <h1>Shops<small></small></h1> </div>
+<table id="shoptable" class="display" width="100%" cellspacing="0">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Country</th>
+
+
+                <!--<th>Position</th>-->
+                <!--<th>Office</th>-->
+                <!--<th>Age</th>-->
+                <!--<th>Start date</th>-->
+                <!--<th>Salary</th>-->
+            </tr>
+        </thead>
+        <!--<tfoot>-->
+            <!--<tr>-->
+                <!--<th>Name</th>-->
+                <!--<th>Position</th>-->
+                <!--<th>Office</th>-->
+                <!--<th>Age</th>-->
+                <!--<th>Start date</th>-->
+                <!--<th>Salary</th>-->
+            <!--</tr>-->
+        <!--</tfoot>-->
+        <tbody>
+            <tr>
+                <!--<td>Tiger Nixon</td> -->
+                <!--<td>System Architect</td>-->
+                <!--<td>Edinburgh</td>-->
+                <!--<td>61</td>-->
+                <!--<td>2011/04/25</td>-->
+                <!--<td>$320,800</td>-->
+            </tr>
+
+        </tbody>
+    </table>
+
+
+{% endblock %}
+
+{% block js %}
+    var oTable = $('#shoptable').dataTable({
+        // ...
+        "processing": true,
+        "serverSide": true,
+        "ajax": "{% url 'shop_list_json' %}"
+    });
+    // ...
+{% endblock %}

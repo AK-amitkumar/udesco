@@ -1,0 +1,48 @@
+
+{% extends 'base.html' %} <!-- not app-specific base -->
+
+
+
+{% block content %}
+
+ <div class="page-header">   <h1>Smart Solar - Product List<small></small></h1> </div>
+<table id="cptable" class="display" width="100%" cellspacing="0">
+        <thead>
+            <tr>
+
+                <th>Product</th>
+                <th>CRM</th>
+                <th>Start Date</th>
+                <th>Enable State</th>
+                <th>Condition</th>
+                <th>Serial Number</th>
+                <th>IMEI</th>
+                <th>Active</th>
+
+            </tr>
+        </thead>
+        <!--<tfoot>-->
+            <!--<tr>-->
+
+            <!--</tr>-->
+        <!--</tfoot>-->
+        <tbody>
+            <tr>
+
+            </tr>
+
+        </tbody>
+    </table>
+
+
+{% endblock %}
+
+{% block js %}
+    var oTable = $('#cptable').dataTable({
+        // ...
+        "processing": true,
+        "serverSide": true,
+        "ajax": "{% url 'crm_product_list_json' %}"
+    });
+    // ...
+{% endblock %}
