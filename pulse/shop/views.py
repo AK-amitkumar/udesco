@@ -25,12 +25,41 @@ def shop(request, shop_id):
 
 #https://docs.djangoproject.com/en/1.11/topics/forms/
 
+
+def customer(request, customer_id=None):
+    # if this is a POST request we need to process the form data
+    if customer_id:
+        customer = Customer.objects.get(pk=customer_id)
+        title = '%s'%(customer.uid)
+        sub_title = '%s %s - state:'%(customer.first,customer.last)
+    else:
+        customer = None
+        title = 'Add New Customer'
+        sub_title = ''
+    if request.method == 'POST':
+        # create a form instance and populate it with data from the request:
+        form = CustomerForm(request.POST, instance=customer)
+        # check whether it's valid:
+        if form.is_valid():
+            # process the data in form.cleaned_data as required
+            # ...
+            # redirect to a new URL:
+            saved = form.save()
+            return HttpResponseRedirect(reverse('customer_detail', args=[saved.id]))
+
+    # if a GET (or any other method) we'll create a blank form
+    else:
+        form = CustomerForm(instance=customer)
+    context = {'customer': customer, 'form': form, 'title': title,'sub_title':sub_title,'customer_id':customer_id if customer_id else 0}
+    return render(request, 'shop/customer.html', context)
+
+
 def crm(request, crm_id=None):
     # if this is a POST request we need to process the form data
     if crm_id:
         crm = CRM.objects.get(pk=crm_id)
         title = '%s'%(crm.uid)
-        sub_title = '%s %s - state: %s'%(crm.first,crm.last, crm.get_state_display())
+        sub_title = '%s %s - state: %s'%(crm.customer.first,crm.customer.last, crm.get_state_display())
     else:
         crm = None
         title = 'Add New CRM'
@@ -128,10 +157,10 @@ class CRMListJson(BaseDatatableView):
         json_data = []
         for item in qs:
             json_data.append([
-                item.uid,
-                "<a href='/shop/crm/%s/'>%s</a>" % (item.id, '{0} {1}'.format(item.first, item.last)),
-                item.phone,
-                item.email,
+                "<a href='/shop/crm/%s/'>%s</a>" % (item.id, item.uid),
+                "<a href='/shop/customer/%s/'>%s</a>" % (item.customer.id,'{0} {1}'.format(item.customer.first, item.customer.last)),
+                item.customer.phone,
+                item.customer.email,
                 item.state,
             ])
         return json_data

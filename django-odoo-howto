@@ -103,5 +103,15 @@ IS THRE ANY CASE WHERE SOMTHING MIGHT HAPPEN IN erp THAT WE WOULD NEED TO HAVE U
 I DON'T THINK SO... I THINK THE ERP SHOULD MAINLY BE LIKE ACCOUNTING (NOT THE HEART - BUT THE STOMACH -  EVERYTHING INTO IT) 
 
 
+===========
+
+celery as a scheduler
+
+rabbitmq is the 'broker' used by celery
+
+sudo apt-get install rabbitmq-server
+
+
+
 
 

@@ -127,12 +127,12 @@ def get_company_and_make_shop_and_crms():
                 # zip=v['zip'],city=v['city'],
                 if comp:
                     for i in range(3):
-                        s, c = Shop.objects.get_or_create(name=fake.company(), company = comp,
+                        s, c = Shop.objects.get_or_create(name=fake.company(), company = comp, country=country,
                         email=fake.email(), phone = fake.phone_number(),
                         street=fake.street_address(),#street2=fake.email(),
                         zip=fake.zipcode(),city=fake.city())
                         print 'shop-country', country, comp.country
-                        print 'MAKING CUSTOMERS FOR SHOP %s'%s.name
+                        print 'MAKING CRM and CUSTOMERS FOR SHOP %s'%s.name
                         make_crms(comp,country,s)
             except Exception as e:
                 print e
@@ -184,10 +184,11 @@ def make_crms(comp,country,shop):
         # except Exception as e:
         #     print e #faker not generating unique ppl
         try:
-            CRM.objects.get_or_create(uid=fake.ssn(),first=fake.first_name(),last=fake.last_name(),shop=shop,#company = comp,
+            cust, cr = Customer.objects.get_or_create(uid=fake.ssn(),first=fake.first_name(),last=fake.last_name(),#company = comp,
                             email=fake.email(), phone = fake.phone_number(),
                             street=fake.street_address(),#street2=fake.email(),
                             zip=fake.zipcode(),city=fake.city())
+            CRM.objects.get_or_create(uid=cust.uid,customer=cust,shop=shop)
         except Exception as e:
             print e #faker not generating unique ppl
     return None

@@ -6,6 +6,21 @@ from .models import *
 from django import forms
 
 
+
+# Create the form class.
+class CustomerForm(ModelForm):
+    def __init__(self, *args, **kwargs):
+        # SET 'form-control' class on text fields to make them bootstrap style
+        super(CustomerForm, self).__init__(*args, **kwargs)
+        for field in self.visible_fields():
+            if field.field.widget.input_type in ['text','email']:
+                field.field.widget.attrs['class'] = 'form-control'
+        # SET required = False to overwrite the form-control, which sets it to True
+    class Meta:
+        model = Customer
+        exclude = []
+
+
 # Create the form class.
 class CRMForm(ModelForm):
     def __init__(self, *args, **kwargs):
@@ -15,10 +30,10 @@ class CRMForm(ModelForm):
             if field.field.widget.input_type in ['text','email']:
                 field.field.widget.attrs['class'] = 'form-control'
         # SET required = False to overwrite the form-control, which sets it to True
-        self.fields['street2'].required = False
+        #self.fields['street2'].required = False
     class Meta:
         model = CRM
-        exclude = ['crm_products','state']
+        exclude = ['crm_products','state', 'customer']
     # name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
     # email = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
     # street = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))

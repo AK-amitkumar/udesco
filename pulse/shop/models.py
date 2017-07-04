@@ -15,7 +15,7 @@ class Shop(models.Model):
     street = models.CharField(max_length=200)
     street2 = models.CharField(max_length=200, null=True, blank=True)
     zip = models.CharField(max_length=200)
-    #country = models.ForeignKey('Country') should really be on company
+    country = models.ForeignKey('Country',null=True, blank=True) #should default to company
     company = models.ForeignKey('Company')
     email = models.EmailField(null=True, blank=True)
     phone = models.CharField(max_length=200)
@@ -50,21 +50,30 @@ class Employee(models.Model):
         return self.name
 
 
-PAYMENT_STATE = (('draft','Draft'),('downpay','Downpay'),('late','Late'),('normal','Normal'),('defaulted','Defaulted'),('repo','Repossessed'))
-
-class CRM(models.Model):
+class Customer(models.Model):
     # res_partner of crm = True  // alternative is supplier = True
-    uid = models.CharField(max_length=200, unique= True) #Unique CRM Id
+    uid = models.CharField(max_length=200, unique= True) #Unique CustomerId
     first = models.CharField(max_length=200, null=True, blank=True)  # first
     last = models.CharField(max_length=200, null=True, blank=True)  # last
-    shop = models.ForeignKey('Shop') # linked through the invoice, not the shop
     city = models.CharField(max_length=200)
     street = models.CharField(max_length=200)
     street2 = models.CharField(max_length=200, null=True, blank=True)
     zip = models.CharField(max_length=200, null=True, blank=True)
-    #country = models.ForeignKey('Country', null=True, blank=True)
+    country = models.ForeignKey('Country', null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
     phone = models.CharField(max_length=200, null=True, blank=True)
+    def __unicode__(self):  # __str__ on Python 3
+        return self.uid
+
+
+PAYMENT_STATE = (('draft','Draft'),('downpay','Downpay'),('late','Late'),('normal','Normal'),('defaulted','Defaulted'),('repo','Repossessed'))
+
+class CRM(models.Model):
+    # res_partner of crm = True  // alternative is supplier = True
+    # creation of crm chould only happen on creation of crm products - and this should generate sale order
+    uid = models.CharField(max_length=200, unique= True) #Unique CRM Id
+    shop = models.ForeignKey('Shop') # linked through the invoice, not the shop
+    customer = models.ForeignKey('Customer')
     state = models.CharField(max_length=200, choices = PAYMENT_STATE, default = 'draft')
     crm_products = models.ManyToManyField('Product', through='CRMProduct', null=True, blank=True)
     payg = models.NullBooleanField(null=True, blank=True)  # is it a PAYG payment model - inherits from shop
@@ -112,7 +121,7 @@ ENABLE_STATE = (('enabled','Enabled'),('disabled','Disabled'))
 CONDITION = (('normal','Normal'),('damaged','Damaged'))
 
 class CRMProduct(models.Model):
-    # each line here should roll up to an account_invoice_line
+    # each line here should roll up to an sale_order_line - not account_invoice_line
     product = models.ForeignKey('Product', on_delete=models.CASCADE) #corresponds to product_product
     crm = models.ForeignKey('CRM', on_delete=models.CASCADE)
     #account_id - income or expense account
