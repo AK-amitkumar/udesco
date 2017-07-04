@@ -185,7 +185,7 @@ def make_crms(comp,country,shop):
         #     print e #faker not generating unique ppl
         try:
             cust, cr = Customer.objects.get_or_create(uid=fake.ssn(),first=fake.first_name(),last=fake.last_name(),#company = comp,
-                            email=fake.email(), phone = fake.phone_number(),
+                            email=fake.email(), phone = fake.phone_number(),country=country,
                             street=fake.street_address(),#street2=fake.email(),
                             zip=fake.zipcode(),city=fake.city())
             CRM.objects.get_or_create(uid=cust.uid,customer=cust,shop=shop)
