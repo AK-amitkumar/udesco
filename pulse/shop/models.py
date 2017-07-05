@@ -4,6 +4,29 @@ from __future__ import unicode_literals
 from django.db import models
 import datetime
 
+#for signals
+#https://docs.djangoproject.com/en/1.11/ref/signals/#django.db.models.signals.pre_save
+from django.db.models.signals import *
+#model signals
+    # pre_init
+    # post_init
+    # pre_save
+    # post_save
+    # pre_delete
+    # post_delete
+    # m2m_changed
+    # class_prepared
+#management signals
+    # pre_migrate
+    # post_migrate
+#Request/response signals
+    # request_started
+    # request_finished
+    # got_request_exception
+
+from bridge import api
+
+
 # Create your models here.
 
 
