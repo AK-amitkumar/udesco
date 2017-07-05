@@ -19,7 +19,7 @@ from shop.models import *
 
 
 def index(request):
-    crm_product_list = CRMProduct.objects.order_by('uid')#[:5]
+    crm_product_list = CRMProduct.objects.order_by('erpid')#[:5]
     context = {'crm_product_list': crm_product_list}
     return render(request, 'smart_solar/index.html', context)
 
@@ -94,7 +94,7 @@ class CRMProductListJson(BaseDatatableView):
 
         search = self.request.GET.get(u'search[value]', None)
         if search:
-            qs = qs.filter(crm__uid__istartswith=search)
+            qs = qs.filter(crm__erpid__istartswith=search)
 
         # more advanced example using extra parameters
         # filter_crm = self.request.GET.get(u'crm', None)
@@ -123,7 +123,7 @@ class CRMProductListJson(BaseDatatableView):
                 json_data.append([
                     # item.name,
                     item.product.name,
-                    #"<a href='/shop/crm/%s/'>%s</a>" % (item.crm.id, item.crm.uid),
+                    #"<a href='/shop/crm/%s/'>%s</a>" % (item.crm.id, item.crm.erpid),
                     item.start_date,
                     item.enable_state,
                     item.condition,
@@ -136,7 +136,7 @@ class CRMProductListJson(BaseDatatableView):
                 json_data.append([
                     # item.name,
                     #item.product.name,
-                    "<a href='/shop/crm/%s/'>%s</a>" % (item.crm.id, item.crm.uid),
+                    "<a href='/shop/crm/%s/'>%s</a>" % (item.crm.id, item.crm.erpid),
                     item.start_date,
                     item.enable_state,
                     item.condition,
@@ -149,7 +149,7 @@ class CRMProductListJson(BaseDatatableView):
                 json_data.append([
                     # item.name,
                     item.product.name,
-                    "<a href='/shop/crm/%s/'>%s</a>" % (item.crm.id, item.crm.uid),
+                    "<a href='/shop/crm/%s/'>%s</a>" % (item.crm.id, item.crm.erpid),
                     item.start_date,
                     item.enable_state,
                     item.condition,

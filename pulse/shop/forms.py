@@ -57,4 +57,4 @@ class CRMProductForm(ModelForm):
 
     class Meta:
         model = CRMProduct
-        exclude = ['enable_state', 'condition']
+        exclude = ['enable_state', 'condition','crm']
