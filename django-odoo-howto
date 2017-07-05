@@ -112,6 +112,19 @@ rabbitmq is the 'broker' used by celery
 sudo apt-get install rabbitmq-server
 
 
+=============
+
+monthly invoice with odoo - forget the 'rental' module
+https://www.youtube.com/watch?v=f4dzLNNLoEs
+
+search for 'recurring documents' module in apps
+there is a module already in codebase, install it
+
+logout/login
+
+turn on developer mode (settings>developer mode) to get full settings menu
+settings>Technical>Automation>Recurring Types (here you define invoice as a rcurring type)
+
 
 
 
