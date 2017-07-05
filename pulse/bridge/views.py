@@ -23,6 +23,6 @@ def make_demo(request):
     return HttpResponse(ret)
 
 def get_product_definitions(request):
-    ret = demo.get_product_definitions_function()
+    ret = demo.get_products()
     return HttpResponse(ret)
 

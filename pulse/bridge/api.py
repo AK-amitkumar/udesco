@@ -8,6 +8,7 @@
 \____|__  /____|   |___|  \___  / |____/|___|  /\___  >__| |__|\____/|___|  /____  >
         \/                    \/             \/     \/                    \/     \/
 xmlrpc wrapper functions for reading and writing to ERP
+HITS /home/iron-aiden/udesco/odoo10/odoo/service/server.py
 '''
 
 
@@ -32,28 +33,39 @@ def auth_erp(username = USERNAME, password = PASSWORD, db = DB, sock_common = so
 
 UID = auth_erp()
 
+
+#INSPECT FIELDS
+def inspect_erp(model,username = USERNAME, password = PASSWORD, db = DB,
+             uid = UID, sock_models = sock_models):
+    if not uid:
+        print 'reauth'
+        uid = auth_erp(username = username, password = password, db = db, sock_common = sock_common)
+    sock_models.execute_kw(
+    db, uid, password, model, 'fields_get',
+    [], {'attributes': ['string', 'help', 'type']})
+
 #READ
-# def read_erp(model,function,username = USERNAME, password = PASSWORD, db = DB,
-#              uid = UID, sock_models = sock_models):
-#     '''
-#
-#     :param model: the ERP model you are looking for (str)
-#     :param function: some function to check on model, ex, 'check_access_rights
-#     :param username:
-#     :param password:
-#     :param db:
-#     :param uid:
-#     :param sock_models:
-#     :return:
-#     '''
-#     if not uid:
-#         print 'reauth'
-#         uid = auth_erp(username = username, password = password, db = db, sock_common = sock_common)
-#     #sock_models = xmlrpclib.ServerProxy('http://localhost:8069/xmlrpc/2/object')
-#     ret = sock_models.execute_kw(db, uid, password,
-#         model, function #'check_access_rights',
-#         ['read'], {'raise_exception': False})
-#     return ret
+def read_erp(model,function,username = USERNAME, password = PASSWORD, db = DB,
+             uid = UID, sock_models = sock_models):
+    '''
+
+    :param model: the ERP model you are looking for (str)
+    :param function: some function to check on model, ex, 'check_access_rights
+    :param username:
+    :param password:
+    :param db:
+    :param uid:
+    :param sock_models:
+    :return:
+    '''
+    if not uid:
+        print 'reauth'
+        uid = auth_erp(username = username, password = password, db = db, sock_common = sock_common)
+    #sock_models = xmlrpclib.ServerProxy('http://localhost:8069/xmlrpc/2/object')
+    ret = sock_models.execute_kw(db, uid, password,
+        model, function #'check_access_rights',
+        ['read'], {'raise_exception': False})
+    return ret
 
 
 #SEARCH

@@ -7,6 +7,9 @@ import datetime
 #for signals
 #https://docs.djangoproject.com/en/1.11/ref/signals/#django.db.models.signals.pre_save
 from django.db.models.signals import *
+from django.dispatch import receiver
+import logging
+log = logging.getLogger(__name__)
 #model signals
     # pre_init
     # post_init
@@ -24,37 +27,15 @@ from django.db.models.signals import *
     # request_finished
     # got_request_exception
 
+
+
 from bridge import api
 
 
+
+
+
 # Create your models here.
-
-
-
-class Shop(models.Model):
-    # res_partner in ERP
-    name = models.CharField(max_length=200) #first and last
-    city = models.CharField(max_length=200)
-    street = models.CharField(max_length=200)
-    street2 = models.CharField(max_length=200, null=True, blank=True)
-    zip = models.CharField(max_length=200)
-    country = models.ForeignKey('Country',null=True, blank=True) #should default to company
-    company = models.ForeignKey('Company')
-    email = models.EmailField(null=True, blank=True)
-    phone = models.CharField(max_length=200)
-    parent = models.ForeignKey('Shop', null=True, blank=True)
-    payg = models.BooleanField(default=False)  # is it a PAYG payment model
-    def __unicode__(self):              # __str__ on Python 3
-        return self.name
-
-class Company(models.Model):
-    # res_company/res_partner  in ERP
-    name = models.CharField(max_length=200)
-    country = models.ForeignKey('Country')
-    def __unicode__(self):              # __str__ on Python 3
-        return self.name
-
-
 class Country(models.Model):
     # res_country  in ERP
     code = models.CharField(max_length=200, unique=True)
@@ -64,18 +45,36 @@ class Country(models.Model):
         return self.code
 
 
-class Employee(models.Model):
-    # hr_employee/res_partner
-    # in ERP hr_employee.adress_id is a many2one to res_partner
+class Company(models.Model):
+    # res_company/res_partner  in ERP
+    erpid = models.IntegerField(null=True, blank=True)
     name = models.CharField(max_length=200)
-    shop = models.ForeignKey('Shop')
+    country = models.ForeignKey('Country')
+    def __unicode__(self):              # __str__ on Python 3
+        return self.name
+
+
+
+
+class Shop(models.Model):
+    #no corresponding model in erp yet
+    name = models.CharField(max_length=200) #first and last
+    city = models.CharField(max_length=200)
+    street = models.CharField(max_length=200)
+    street2 = models.CharField(max_length=200, null=True, blank=True)
+    zip = models.CharField(max_length=200)
+    country = models.ForeignKey('Country',null=True, blank=True) #should default to company
+    company = models.ForeignKey('Company')
+    email = models.EmailField(null=True, blank=True)
+    phone = models.CharField(max_length=200)
+    payg = models.BooleanField(default=False)  # is it a PAYG payment model
     def __unicode__(self):              # __str__ on Python 3
         return self.name
 
 
 class Customer(models.Model):
     # res_partner of crm = True  // alternative is supplier = True
-    uid = models.CharField(max_length=200, unique= True) #Unique CustomerId
+    erpid = models.IntegerField(null=True, blank=True) #Unique CustomerId
     first = models.CharField(max_length=200, null=True, blank=True)  # first
     last = models.CharField(max_length=200, null=True, blank=True)  # last
     city = models.CharField(max_length=200)
@@ -83,10 +82,56 @@ class Customer(models.Model):
     street2 = models.CharField(max_length=200, null=True, blank=True)
     zip = models.CharField(max_length=200, null=True, blank=True)
     country = models.ForeignKey('Country', null=True, blank=True)
+    #shop = models.ForeignKey('Shop') on the crm
     email = models.EmailField(null=True, blank=True)
     phone = models.CharField(max_length=200, null=True, blank=True)
     def __unicode__(self):  # __str__ on Python 3
-        return self.uid
+        return self.erpid
+
+    # #overwrite the save method to write to the ERP
+    # def save(self, *args, **kwargs):
+    #     if self.pk is None:
+    #         #write to the
+    #         api.
+    #         self.erpid = 100
+    #
+    #     super(Model, self).save(*args, **kwargs)
+
+
+# @receiver(pre_save, sender=Customer, weak=False, )
+# def pre_set_erp_id(sender, instance=None, **kwargs):
+#     if instance._state.adding is True:
+#         #set erp_id to number that will not be used as placeholder
+#         instance.erpid = 10000000
+#     else:
+#         pass
+
+@receiver(post_save, sender=Customer)
+def set_erp_id(sender, instance=None, created=False, **kwargs):
+    if created:
+        print 'Created Post-save'
+        #send a create to the ERP
+        fields = api.inspect_erp('res.partner')
+        create_dict = {}
+        for field in instance._meta.get_fields():
+            # do not write 'id' or foreign key fields to ERP
+            if not field.is_relation and field.name != 'id':
+                #cannot write None to the ERP fields
+                if getattr(instance, field.name):
+                    create_dict[field.name] = getattr(instance, field.name)
+        create_dict['name'] = create_dict.get('name','')+' '+create_dict.get('last','')
+        create_dict['customer']=True
+        erpid = api.create_erp('res.partner',create_dict)
+        if erpid:
+            instance.erpid = erpid
+        else:
+            #was not created in the erp, you shoule probably delete this
+            instance.delete()
+        # log.warning('New Shop Created %s'%(kwargs.get('instance')))
+    else:
+        print 'Write Post-save'
+        update_dict={}
+        api.write_erp('res_partner', [instance.erpid])
 
 
 PAYMENT_STATE = (('draft','Draft'),('downpay','Downpay'),('late','Late'),('normal','Normal'),('defaulted','Defaulted'),('repo','Repossessed'))
@@ -94,18 +139,19 @@ PAYMENT_STATE = (('draft','Draft'),('downpay','Downpay'),('late','Late'),('norma
 class CRM(models.Model):
     # res_partner of crm = True  // alternative is supplier = True
     # creation of crm chould only happen on creation of crm products - and this should generate sale order
-    uid = models.CharField(max_length=200, unique= True) #Unique CRM Id
+    erpid = models.IntegerField(null=True, blank=True) #Unique CRM Id
     shop = models.ForeignKey('Shop') # linked through the invoice, not the shop
     customer = models.ForeignKey('Customer')
     state = models.CharField(max_length=200, choices = PAYMENT_STATE, default = 'draft')
     crm_products = models.ManyToManyField('Product', through='CRMProduct', null=True, blank=True)
     payg = models.NullBooleanField(null=True, blank=True)  # is it a PAYG payment model - inherits from shop
     def __unicode__(self):  # __str__ on Python 3
-        return self.uid
+        return self.erpid
 
 
 class Supplier(models.Model):
     # res_partner of crm = True  // alternative is supplier = True
+    erpid = models.IntegerField(null=True, blank=True)  # Unique CRM Id
     name = models.CharField(max_length=200) #first and last
     #shop = models.ForeignKey('Shop') # linked through the invoice, not the shop
     city = models.CharField(max_length=200)
@@ -167,6 +213,14 @@ class CRMProduct(models.Model):
     def __unicode__(self):  # __str__ on Python 3
         return '%s, %s'%(self.product.default_code,self.serial_number)
 
+# class Employee(models.Model):
+#     # hr_employee/res_partner
+#     # in ERP hr_employee.adress_id is a many2one to res_partner
+#     name = models.CharField(max_length=200)
+#     shop = models.ForeignKey('Shop')
+# 
+#     def __unicode__(self):  # __str__ on Python 3
+#         return self.name
 
 # INVOICE_STATES = (
 #     ('draft', 'draft'),

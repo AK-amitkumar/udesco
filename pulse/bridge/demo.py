@@ -32,14 +32,15 @@ select * from product_template --list_price, default_code, company_id
 '''
 
 def make_demo_function():
-    print 'MAKING FAKE ORGANIZATION w ERP and FAKE DATA'
-    print 'countries from ERP res_country table'
+    print 'ERP res_country --> Django Country'
     get_countries()
-    print 'companies from ERP res_company table - shops withing that company with FAKE data'
-    get_company_and_make_shop_and_crms()
-    print 'get physical products from ERP product_template table'
-    get_product_definitions_function()
-    print 'Creating CRMProducts - there should be some kind of create override that creates draft account_invoice in ERP'
+    print 'ERP res_partner --> Django Company (erpid of res_partner id)'
+    comp, country = get_company()
+    print 'DJANGO Shop'
+    make_shops(comp, country)
+    print 'ERP product_template --> Django Product (erpid of product_template id)'
+    get_products()
+    print 'Django CRMProduct --> ERP sales_order'
     make_crm_products()
     return True
 
@@ -49,20 +50,18 @@ def get_countries():
     #get countries from res_country table
     vals = api.search_read_erp('res.country', [], ['name','code'])
     for v in vals:
-        #print v
         p, c = Country.objects.get_or_create(code=v['code'], name=v['name'])
 
 
-def get_company_and_make_shop_and_crms():
+def get_company():
     #get company from res_company table
 
     #link Pulse company to Pulse country depending on what link is in ERP
     vals = api.search_read_erp('res.partner', [], ['name', 'company_id', 'country_id', 'email', 'phone',
                                                'street', 'street2', 'city', 'zip', 'is_company',
-                                               'supplier', 'crm' ])
+                                               'supplier', 'customer' ])
     for v in vals:
         if v.get('is_company'):
-            #print v
             try:
                 country=None
                 if v.get('country_id'):
@@ -72,39 +71,43 @@ def get_company_and_make_shop_and_crms():
                         country = res[0]
                     else:
                         country = Country.objects.get(id=5)
-                comp, c = Company.objects.get_or_create(name=v['name'], country=country)
-                print 'comp-country',country, comp.country
-                # email=v['email'], phone = v['phone'],
-                # street=v['street'],street2=v['street2'],
-                # zip=v['zip'],city=v['city'],
-                if comp:
-                    for i in range(3):
-                        s, c = Shop.objects.get_or_create(name=fake.company(), company = comp, country=country,
-                        email=fake.email(), phone = fake.phone_number(),
-                        street=fake.street_address(),#street2=fake.email(),
-                        zip=fake.zipcode(),city=fake.city())
-                        print 'shop-country', country, comp.country
-                        print 'MAKING CRM and CUSTOMERS FOR SHOP %s'%s.name
-                        make_crms(comp,country,s)
+                comp, c = Company.objects.get_or_create(erpid=v['id'],name=v['name'], country=country)
+                return comp, country
             except Exception as e:
                 print e
+        else:
+            continue
+    raise Exception('Could not get a company res_partner from odoo - make one first')
 
 
-def make_crms(comp,country,shop):
+
+def make_shops(comp, country):
+    for i in range(3):
+        shop, c = Shop.objects.get_or_create(name=fake.company(), company=comp, country=country,
+                                          email=fake.email(), phone=fake.phone_number(),
+                                          street=fake.street_address(),  # street2=fake.email(),
+                                          zip=fake.zipcode(), city=fake.city())
+        print 'Django Customer --> ERP res_partner (customer = True)'
+        print 'Django CRM --> ERP sales_order (draft) (erpid of sales_order id)'
+        make_customers(country,shop, comp)
+
+
+def make_customers(country,shop, comp):
     for j in range(50):
         try:
-            cust, cr = Customer.objects.get_or_create(uid=fake.ssn(),first=fake.first_name(),last=fake.last_name(),#company = comp,
+            erpid = fake.random_int()*fake.random_int()/fake.random_int()
+            cust, cr = Customer.objects.get_or_create(erpid=erpid,first=fake.first_name(),last=fake.last_name(),#company = comp,
                             email=fake.email(), phone = fake.phone_number(),country=country,
                             street=fake.street_address(),#street2=fake.email(),
                             zip=fake.zipcode(),city=fake.city())
-            CRM.objects.get_or_create(uid=cust.uid,customer=cust,shop=shop)
+            CRM.objects.get_or_create(erpid=cust.erpid,customer=cust,shop=shop)
         except Exception as e:
             print e #faker not generating unique ppl
     return None
 
 
 
-def get_product_definitions_function():
+def get_products():
     # get some product definitions from ERP
     #type = consu, service, product (Consumable aka don't manage Inventory, Service non-physical, Stockable Product aka manage stock
     vals = api.search_read_erp('product.template', [('type','in',['consu','product'])], ['name', 'default_code', 'list_price' ])
@@ -117,7 +120,6 @@ def get_product_definitions_function():
 def make_crm_products():
     crms = CRM.objects.all()
     products = Product.objects.all()
-    print 'Creating CRMProducts - there should be some kind of create override that creates draft account_invoice in ERP'
     for i,c in enumerate(crms):
         rando =  randint(0,5)
         if rando == 1:

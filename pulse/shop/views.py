@@ -30,7 +30,7 @@ def customer(request, customer_id=None):
     # if this is a POST request we need to process the form data
     if customer_id:
         customer = Customer.objects.get(pk=customer_id)
-        title = '%s'%(customer.uid)
+        title = '%s'%(customer.erpid)
         sub_title = '%s %s - state:'%(customer.first,customer.last)
     else:
         customer = None
@@ -58,7 +58,7 @@ def crm(request, crm_id=None):
     # if this is a POST request we need to process the form data
     if crm_id:
         crm = CRM.objects.get(pk=crm_id)
-        title = '%s'%(crm.uid)
+        title = '%s'%(crm.erpid)
         sub_title = '%s %s - state: %s'%(crm.customer.first,crm.customer.last, crm.get_state_display())
     else:
         crm = None
@@ -91,13 +91,13 @@ class CRMListJson(BaseDatatableView):
     model = CRM
 
     # define the columns that will be returned
-    columns = ['uid','name','phone','email','state']#, 'user', 'state', 'created', 'modified']
+    columns = ['erpid','name','phone','email','state']#, 'user', 'state', 'created', 'modified']
 
     # define column names that will be used in sorting
     # order is important and should be same as order of columns
     # displayed by datatables. For non sortable columns use empty
     # value like ''
-    order_columns = ['uid','name','phone','email','state']#, 'user', 'state', '', '']
+    order_columns = ['erpid','name','phone','email','state']#, 'user', 'state', '', '']
 
     # set max limit of records returned, this is used to protect our site if someone tries to attack our site
     # and make it return huge amount of data
@@ -123,7 +123,7 @@ class CRMListJson(BaseDatatableView):
         # simple example:
         search = self.request.GET.get(u'search[value]', None)
         if search:
-            qs = qs.filter(uid__istartswith=search)
+            qs = qs.filter(erpid__istartswith=search)
 
 
             # my custom queries
@@ -157,7 +157,7 @@ class CRMListJson(BaseDatatableView):
         json_data = []
         for item in qs:
             json_data.append([
-                "<a href='/shop/crm/%s/'>%s</a>" % (item.id, item.uid),
+                "<a href='/shop/crm/%s/'>%s</a>" % (item.id, item.erpid),
                 "<a href='/shop/customer/%s/'>%s</a>" % (item.customer.id,'{0} {1}'.format(item.customer.first, item.customer.last)),
                 item.customer.phone,
                 item.customer.email,
