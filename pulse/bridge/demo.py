@@ -18,7 +18,7 @@ from faker import Faker
 fake = Faker()
 
 from random import randint
-import datetime
+import datetime, os
 
 
 '''
@@ -62,11 +62,30 @@ def drop_odoo_create_new_installed_modules():
     except psycopg2.DatabaseError as ex:
         print ex
         # sys.exit(1)
-    conn.autocommit = False
-    #
-    # python. / odoo - bin - c / etc / odoo / openerp - server - 10.
-    # conf
+    #conn.autocommit = False
+    conn.close()
+    root_dir = os.getcwd().split('udesco')[0] #'/home/aiden/'
+    odoo_bin_command = os.path.join(root_dir, 'udesco','odoo10','odoo-bin')
+    demo_config_file = os.path.join(root_dir, 'udesco','odoo10','debian','odoo-demo.conf')
+    #now reconnect to demo database
+    output=subprocess.check_output(
+        ["/home/aiden/udesco/odoo10/odoo-bin","--xmlrpc-port","8071" ])#"-c", "/home/aiden/udesco/odoo10/debian/odoo-demo.conf"])
 
+    for line in output:
+        print line
+#  SETUP DATABASE
+
+#"/home/aiden/udesco/odoo10/odoo-bin --config '/home/aiden/udesco/odoo10/debian/odoo-demo.conf'"
+#subprocess.check_output("/home/aiden/udesco/odoo10/odoo-bin --config '/home/aiden/udesco/odoo10/debian/odoo-demo.conf'")
+# echo "Drop DB '$database'"    subprocess.check_output('ps','-aux','|','grep',[odoo_bin_command])
+# psql template1 -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$database';"  &>/dev/null
+# dropdb --if-exists $database
+# echo "Initialize Blank DB '$database'"  >/dev/null
+# python oe initialize -d $database --addons "../addons/,../web/addons/"
+# echo "Update Base Module"
+# ./openerp-server -c  ../config/openerp-server.conf -d $database -u base  --stop-after-init
+# echo "Install BBOXX Modules"
+# ./openerp-server -c ../config/openerp-server.conf -d $database -i $MODULES_TO_INSTALL --stop-after-init
 
 def make_demo_function():
     drop_odoo_create_new_installed_modules()
