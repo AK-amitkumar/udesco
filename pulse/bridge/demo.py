@@ -30,19 +30,44 @@ select * from product_product --default_code, product_template_id
 select * from product_template --list_price, default_code, company_id
 
 '''
+import sys
+import psycopg2
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT # for dropping and creating databases
+
+from api import USERNAME,PASSWORD,DB
+#http://initd.org/psycopg/docs/usage.html#transactions-control
+#https://stackoverflow.com/questions/34484066/create-a-postgres-database-using-python
+def drop_odoo_create_new_installed_modules():
+    conn = None
+    try:
+        conn = psycopg2.connect("dbname = '%s' user = '%s' host = 'localhost' password = '%s'"%('postgres',USERNAME,PASSWORD))
+    except psycopg2.DatabaseError as ex:
+        print "Unable to connect to database '%s', please create one"%DB
+        sys.exit(1)
+    cur = conn.cursor()
+    # cur.execute("SELECT * from res_partner;")#"CREATE TABLE test (id serial PRIMARY KEY, num integer, data varchar);")
+    # for row in cur.fetchall():
+    #     print row[0]
+    try:
+        cur.execute("DROP DATABASE %s;"%DB)
+    except psycopg2.DatabaseError as ex:
+        print ex
+        print "Unable to drop database '%s', probably need to connect to a different one"%DB
+
 
 def make_demo_function():
-    print 'ERP res_country --> Django Country'
-    get_countries()
-    print 'ERP res_partner --> Django Company (erpid of res_partner id)'
-    comp, country = get_company()
-    print 'DJANGO Shop'
-    make_shops(comp, country)
-    print 'ERP product_template --> Django Product (erpid of product_template id)'
-    get_products()
-    print 'Django CRMProduct --> ERP sales_order'
-    make_crm_products()
-    return True
+    drop_odoo_create_new_installed_modules()
+    # print 'ERP res_country --> Django Country'
+    # get_countries()
+    # print 'ERP res_partner --> Django Company (erpid of res_partner id)'
+    # comp, country = get_company()
+    # print 'DJANGO Shop'
+    # make_shops(comp, country)
+    # print 'ERP product_template --> Django Product (erpid of product_template id)'
+    # get_products()
+    # print 'Django CRMProduct --> ERP sales_order'
+    # make_crm_products()
+    # return True
 
 
 
