@@ -102,7 +102,7 @@ def make_customers(country,shop, comp):
                             zip=fake.zipcode(),city=fake.city())
             CRM.objects.get_or_create(erpid=cust.erpid,customer=cust,shop=shop)
         except Exception as e:
-            print e #faker not generating unique ppl
+            print e
     return None
 
 

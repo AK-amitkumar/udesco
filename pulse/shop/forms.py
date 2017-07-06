@@ -18,7 +18,7 @@ class CustomerForm(ModelForm):
         # SET required = False to overwrite the form-control, which sets it to True
     class Meta:
         model = Customer
-        exclude = []
+        exclude = ['erpid']
 
 
 # Create the form class.

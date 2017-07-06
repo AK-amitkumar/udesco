@@ -88,50 +88,55 @@ class Customer(models.Model):
     def __unicode__(self):  # __str__ on Python 3
         return self.erpid
 
-    # #overwrite the save method to write to the ERP
-    # def save(self, *args, **kwargs):
-    #     if self.pk is None:
-    #         #write to the
-    #         api.
-    #         self.erpid = 100
-    #
-    #     super(Model, self).save(*args, **kwargs)
-
-
-# @receiver(pre_save, sender=Customer, weak=False, )
-# def pre_set_erp_id(sender, instance=None, **kwargs):
-#     if instance._state.adding is True:
-#         #set erp_id to number that will not be used as placeholder
-#         instance.erpid = 10000000
-#     else:
-#         pass
-
-@receiver(post_save, sender=Customer)
-def set_erp_id(sender, instance=None, created=False, **kwargs):
-    if created:
-        print 'Created Post-save'
-        #send a create to the ERP
-        fields = api.inspect_erp('res.partner')
-        create_dict = {}
-        for field in instance._meta.get_fields():
+    def save(self, *args, **kwargs):
+        fields_dict = {}
+        # fields = api.inspect_erp('res.partner')
+        for field in self._meta.get_fields():
             # do not write 'id' or foreign key fields to ERP
             if not field.is_relation and field.name != 'id':
-                #cannot write None to the ERP fields
-                if getattr(instance, field.name):
-                    create_dict[field.name] = getattr(instance, field.name)
-        create_dict['name'] = create_dict.get('name','')+' '+create_dict.get('last','')
-        create_dict['customer']=True
-        erpid = api.create_erp('res.partner',create_dict)
-        if erpid:
-            instance.erpid = erpid
-        else:
-            #was not created in the erp, you shoule probably delete this
-            instance.delete()
-        # log.warning('New Shop Created %s'%(kwargs.get('instance')))
-    else:
-        print 'Write Post-save'
-        update_dict={}
-        api.write_erp('res_partner', [instance.erpid])
+                # cannot write None to the ERP fields
+                if getattr(self, field.name):
+                    fields_dict[field.name] = getattr(self, field.name)
+        fields_dict['name'] = fields_dict.get('name', '') + ' ' + fields_dict.get('last', '')
+        if not self.pk: #overwrite the create() method
+            fields_dict['customer'] = True
+            erpid = api.create_erp('res.partner', fields_dict)
+            # don't save if no erpid is returned
+            if erpid:
+                self.erpid = erpid
+                super(Customer, self).save(*args, **kwargs)
+        else: #overwrite the save() method
+            api.write_erp('res.partner', [self.erpid], fields_dict)
+            super(Customer, self).save(*args, **kwargs)  # Call the "real" save() method.
+
+
+
+
+# @receiver(post_save, sender=Customer)
+# def set_erp_id(sender, instance=None, created=False, **kwargs):
+#     fields_dict = {}
+#     # fields = api.inspect_erp('res.partner')
+#     for field in instance._meta.get_fields():
+#         # do not write 'id' or foreign key fields to ERP
+#         if not field.is_relation and field.name != 'id':
+#             # cannot write None to the ERP fields
+#             if getattr(instance, field.name):
+#                 fields_dict[field.name] = getattr(instance, field.name)
+#     fields_dict['name'] = fields_dict.get('name', '') + ' ' + fields_dict.get('last', '')
+#     if created:
+#         fields_dict['customer'] = True
+#         erpid = api.create_erp('res.partner',fields_dict)
+#         if erpid and instance.id != erpid:
+#             instance.erpid = erpid
+#             instance.save(saving_erpid=True)
+#         elif not erpid: #if not erpid
+#             #was not created in the erp, you shoule probably delete this
+#             instance.delete()
+#         # log.warning('New Shop Created %s'%(kwargs.get('instance')))
+#         print 'Created Post-save'
+#     elif not instance.saving_erpid:
+#         print 'Write Post-save'
+#         api.write_erp('res_partner', [instance.erpid], fields_dict)
 
 
 PAYMENT_STATE = (('draft','Draft'),('downpay','Downpay'),('late','Late'),('normal','Normal'),('defaulted','Defaulted'),('repo','Repossessed'))
