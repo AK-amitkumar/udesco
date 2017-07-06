@@ -34,25 +34,38 @@ import sys
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT # for dropping and creating databases
 
+import subprocess
+
 from api import USERNAME,PASSWORD,DB
+DEMODB='demo_'+DB
+
 #http://initd.org/psycopg/docs/usage.html#transactions-control
 #https://stackoverflow.com/questions/34484066/create-a-postgres-database-using-python
 def drop_odoo_create_new_installed_modules():
     conn = None
     try:
-        conn = psycopg2.connect("dbname = '%s' user = '%s' host = 'localhost' password = '%s'"%('postgres',USERNAME,PASSWORD))
+        conn = psycopg2.connect("dbname = '%s' user = '%s' host = 'localhost' password = '%s'"%(DB,USERNAME,PASSWORD))
     except psycopg2.DatabaseError as ex:
-        print "Unable to connect to database '%s', please create one"%DB
-        sys.exit(1)
+        print ex
+        print "Unable to connect to database %s with user %s and password %s (api.py settings), please create one"%(DB,USERNAME,PASSWORD)
+        #sys.exit(1)
     cur = conn.cursor()
     # cur.execute("SELECT * from res_partner;")#"CREATE TABLE test (id serial PRIMARY KEY, num integer, data varchar);")
     # for row in cur.fetchall():
     #     print row[0]
     try:
-        cur.execute("DROP DATABASE %s;"%DB)
+        conn.autocommit = True
+        #check if demo_db exists, if not, delete it
+        cur.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '%s';"%DEMODB )
+        cur.execute("DROP DATABASE if exists %s;"%DEMODB)
+        #cur.execute("CREATE DATABASE %s;" % DEMODB) - will be create by odoo-bin command
     except psycopg2.DatabaseError as ex:
         print ex
-        print "Unable to drop database '%s', probably need to connect to a different one"%DB
+        # sys.exit(1)
+    conn.autocommit = False
+    #
+    # python. / odoo - bin - c / etc / odoo / openerp - server - 10.
+    # conf
 
 
 def make_demo_function():
