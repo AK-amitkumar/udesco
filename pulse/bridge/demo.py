@@ -18,7 +18,7 @@ from faker import Faker
 fake = Faker()
 
 from random import randint
-import datetime, os
+import datetime
 
 
 '''
@@ -30,50 +30,51 @@ select * from product_product --default_code, product_template_id
 select * from product_template --list_price, default_code, company_id
 
 '''
-import sys
-import psycopg2
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT # for dropping and creating databases
-
-import subprocess
-
-from api import USERNAME,PASSWORD,DB
-DEMODB='demo_'+DB
-
-#http://initd.org/psycopg/docs/usage.html#transactions-control
-#https://stackoverflow.com/questions/34484066/create-a-postgres-database-using-python
-def drop_odoo_create_new_installed_modules():
-    conn = None
-    try:
-        conn = psycopg2.connect("dbname = '%s' user = '%s' host = 'localhost' password = '%s'"%(DB,USERNAME,PASSWORD))
-    except psycopg2.DatabaseError as ex:
-        print ex
-        print "Unable to connect to database %s with user %s and password %s (api.py settings), please create one"%(DB,USERNAME,PASSWORD)
-        #sys.exit(1)
-    cur = conn.cursor()
-    # cur.execute("SELECT * from res_partner;")#"CREATE TABLE test (id serial PRIMARY KEY, num integer, data varchar);")
-    # for row in cur.fetchall():
-    #     print row[0]
-    try:
-        conn.autocommit = True
-        #check if demo_db exists, if not, delete it
-        cur.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '%s';"%DEMODB )
-        cur.execute("DROP DATABASE if exists %s;"%DEMODB)
-        #cur.execute("CREATE DATABASE %s;" % DEMODB) - will be create by odoo-bin command
-    except psycopg2.DatabaseError as ex:
-        print ex
-        # sys.exit(1)
-    #conn.autocommit = False
-    conn.close()
-    root_dir = os.getcwd().split('udesco')[0] #'/home/aiden/'
-    odoo_bin_command = os.path.join(root_dir, 'udesco','odoo10','odoo-bin')
-    demo_config_file = os.path.join(root_dir, 'udesco','odoo10','debian','odoo-demo.conf')
-    #now reconnect to demo database
-    output=subprocess.check_output(
-        ["/home/aiden/udesco/odoo10/odoo-bin","--xmlrpc-port","8071" ])#"-c", "/home/aiden/udesco/odoo10/debian/odoo-demo.conf"])
-
-    for line in output:
-        print line
-#  SETUP DATABASE
+#=============================================================
+# import sys, os
+# import psycopg2
+# from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT # for dropping and creating databases
+#
+# import subprocess
+#
+# from api import USERNAME,PASSWORD,DB
+# DEMODB='demo_'+DB
+#
+# #http://initd.org/psycopg/docs/usage.html#transactions-control
+# #https://stackoverflow.com/questions/34484066/create-a-postgres-database-using-python
+# def drop_odoo_create_new_installed_modules():
+#     conn = None
+#     try:
+#         conn = psycopg2.connect("dbname = '%s' user = '%s' host = 'localhost' password = '%s'"%(DB,USERNAME,PASSWORD))
+#     except psycopg2.DatabaseError as ex:
+#         print ex
+#         print "Unable to connect to database %s with user %s and password %s (api.py settings), please create one"%(DB,USERNAME,PASSWORD)
+#         #sys.exit(1)
+#     cur = conn.cursor()
+#     # cur.execute("SELECT * from res_partner;")#"CREATE TABLE test (id serial PRIMARY KEY, num integer, data varchar);")
+#     # for row in cur.fetchall():
+#     #     print row[0]
+#     try:
+#         conn.autocommit = True
+#         #check if demo_db exists, if not, delete it
+#         cur.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '%s';"%DEMODB )
+#         cur.execute("DROP DATABASE if exists %s;"%DEMODB)
+#         #cur.execute("CREATE DATABASE %s;" % DEMODB) - will be create by odoo-bin command
+#     except psycopg2.DatabaseError as ex:
+#         print ex
+#         # sys.exit(1)
+#     #conn.autocommit = False
+#     conn.close()
+#     root_dir = os.getcwd().split('udesco')[0] #'/home/aiden/'
+#     odoo_bin_command = os.path.join(root_dir, 'udesco','odoo10','odoo-bin')
+#     demo_config_file = os.path.join(root_dir, 'udesco','odoo10','debian','odoo-demo.conf')
+#     #now reconnect to demo database
+#     output=subprocess.check_output(
+#         ["/home/aiden/udesco/odoo10/odoo-bin","--xmlrpc-port","8071" ])#"-c", "/home/aiden/udesco/odoo10/debian/odoo-demo.conf"])
+#
+#     for line in output:
+#         print line
+# ==============================================================================================
 
 #"/home/aiden/udesco/odoo10/odoo-bin --config '/home/aiden/udesco/odoo10/debian/odoo-demo.conf'"
 #subprocess.check_output("/home/aiden/udesco/odoo10/odoo-bin --config '/home/aiden/udesco/odoo10/debian/odoo-demo.conf'")
@@ -88,18 +89,17 @@ def drop_odoo_create_new_installed_modules():
 # ./openerp-server -c ../config/openerp-server.conf -d $database -i $MODULES_TO_INSTALL --stop-after-init
 
 def make_demo_function():
-    drop_odoo_create_new_installed_modules()
-    # print 'ERP res_country --> Django Country'
-    # get_countries()
-    # print 'ERP res_partner --> Django Company (erpid of res_partner id)'
-    # comp, country = get_company()
-    # print 'DJANGO Shop'
-    # make_shops(comp, country)
-    # print 'ERP product_template --> Django Product (erpid of product_template id)'
-    # get_products()
-    # print 'Django CRMProduct --> ERP sales_order'
-    # make_crm_products()
-    # return True
+    print 'ERP res_country --> Django Country'
+    get_countries()
+    print 'ERP res_partner --> Django Company (erpid of res_partner id)'
+    comp, country = get_company()
+    print 'DJANGO Shop'
+    make_shops(comp, country)
+    print 'ERP product_template --> Django Product (erpid of product_template id)'
+    get_products()
+    print 'Django CRMProduct --> ERP sales_order'
+    make_crm_products()
+    return True
 
 
 

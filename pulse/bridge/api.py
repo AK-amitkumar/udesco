@@ -19,7 +19,7 @@ import xmlrpclib
 #pg database connections are supposed to match with odoo10/debian/odoo.conf
 USERNAME = 'aiden'
 PASSWORD = 'odoo'
-DB = 'odoo'
+DB = 'odoo-demo'
 sock_models = xmlrpclib.ServerProxy('http://localhost:8069/xmlrpc/2/object')
 sock_common = xmlrpclib.ServerProxy('http://localhost:8069/xmlrpc/2/common')
 
