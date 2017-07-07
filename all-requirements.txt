@@ -50,3 +50,4 @@ Django
 django-datatables-view
 Faker
 celery
+oerplib

@@ -21,72 +21,32 @@ from random import randint
 import datetime
 
 
-'''
-select * from res_country
-select * from res_company --name, partner_id, email, phone
-select crm from res_partner --name, company_id, country_id, email, phone, street, street2, city, zip, is_company, supplier (bool), crm (bool)
-select * from res_users --login, password, company_id, partner_id, active
-select * from product_product --default_code, product_template_id
-select * from product_template --list_price, default_code, company_id
+#following is NOT postgres database settings - it is odoo settings
+#pg database connections are supposed to match with odoo10/debian/odoo.conf
+USERNAME = 'aiden'
+PASSWORD = 'odoo'
+DB = 'odoo_demo'
+# SOCK_MODELS = xmlrpclib.ServerProxy('http://localhost:8069/xmlrpc/2/object')
+# SOCK_COMMON = xmlrpclib.ServerProxy('http://localhost:8069/xmlrpc/2/common')
 
-'''
-#=============================================================
-# import sys, os
-# import psycopg2
-# from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT # for dropping and creating databases
-#
-# import subprocess
-#
-# from api import USERNAME,PASSWORD,DB
-# DEMODB='demo_'+DB
-#
-# #http://initd.org/psycopg/docs/usage.html#transactions-control
-# #https://stackoverflow.com/questions/34484066/create-a-postgres-database-using-python
-# def drop_odoo_create_new_installed_modules():
-#     conn = None
-#     try:
-#         conn = psycopg2.connect("dbname = '%s' user = '%s' host = 'localhost' password = '%s'"%(DB,USERNAME,PASSWORD))
-#     except psycopg2.DatabaseError as ex:
-#         print ex
-#         print "Unable to connect to database %s with user %s and password %s (api.py settings), please create one"%(DB,USERNAME,PASSWORD)
-#         #sys.exit(1)
-#     cur = conn.cursor()
-#     # cur.execute("SELECT * from res_partner;")#"CREATE TABLE test (id serial PRIMARY KEY, num integer, data varchar);")
-#     # for row in cur.fetchall():
-#     #     print row[0]
-#     try:
-#         conn.autocommit = True
-#         #check if demo_db exists, if not, delete it
-#         cur.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '%s';"%DEMODB )
-#         cur.execute("DROP DATABASE if exists %s;"%DEMODB)
-#         #cur.execute("CREATE DATABASE %s;" % DEMODB) - will be create by odoo-bin command
-#     except psycopg2.DatabaseError as ex:
-#         print ex
-#         # sys.exit(1)
-#     #conn.autocommit = False
-#     conn.close()
-#     root_dir = os.getcwd().split('udesco')[0] #'/home/aiden/'
-#     odoo_bin_command = os.path.join(root_dir, 'udesco','odoo10','odoo-bin')
-#     demo_config_file = os.path.join(root_dir, 'udesco','odoo10','debian','odoo-demo.conf')
-#     #now reconnect to demo database
-#     output=subprocess.check_output(
-#         ["/home/aiden/udesco/odoo10/odoo-bin","--xmlrpc-port","8071" ])#"-c", "/home/aiden/udesco/odoo10/debian/odoo-demo.conf"])
-#
-#     for line in output:
-#         print line
-# ==============================================================================================
+import oerplib
 
-#"/home/aiden/udesco/odoo10/odoo-bin --config '/home/aiden/udesco/odoo10/debian/odoo-demo.conf'"
-#subprocess.check_output("/home/aiden/udesco/odoo10/odoo-bin --config '/home/aiden/udesco/odoo10/debian/odoo-demo.conf'")
-# echo "Drop DB '$database'"    subprocess.check_output('ps','-aux','|','grep',[odoo_bin_command])
-# psql template1 -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$database';"  &>/dev/null
-# dropdb --if-exists $database
-# echo "Initialize Blank DB '$database'"  >/dev/null
-# python oe initialize -d $database --addons "../addons/,../web/addons/"
-# echo "Update Base Module"
-# ./openerp-server -c  ../config/openerp-server.conf -d $database -u base  --stop-after-init
-# echo "Install BBOXX Modules"
-# ./openerp-server -c ../config/openerp-server.conf -d $database -i $MODULES_TO_INSTALL --stop-after-init
+import api
+
+UID, OERP_INSTANCE = api.auth_erp()
+
+# >>> oerp = oerplib.OERP(server='localhost', database='db_name', protocol='xmlrpc', port=8069)
+#
+#
+# >>> partner_id = oerp.create('res.partner', {'name': 'Jacky Bob', 'lang': 'fr_FR'})
+# >>> partner_data = oerp.read('res.partner', [partner_id], ['name'])
+# >>> oerp.write('res.partner', [partner_id], {'name': 'Charly Bob'})
+# True
+# >>> partner_ids = oerp.search('res.partner', [('name', 'ilike', 'Bob')])
+# >>> oerp.unlink('res.partner', [partner_id])
+#
+# >>> user_obj = oerp.get('res.users')
+# >>> user_obj.write([1], {'name': "Dupont D."})
 
 def make_demo_function():
     print 'ERP res_country --> Django Country'
@@ -105,7 +65,7 @@ def make_demo_function():
 
 def get_countries():
     #get countries from res_country table
-    vals = api.search_read_erp('res.country', [], ['name','code'])
+    vals = api.search_read_erp('res.country', [], ['name','code'],oerp=UID, uid=OERP_INSTANCE)
     for v in vals:
         p, c = Country.objects.get_or_create(code=v['code'], name=v['name'])
 
@@ -116,14 +76,13 @@ def get_company():
     #link Pulse company to Pulse country depending on what link is in ERP
     vals = api.search_read_erp('res.partner', [], ['name', 'company_id', 'country_id', 'email', 'phone',
                                                'street', 'street2', 'city', 'zip', 'is_company',
-                                               'supplier', 'customer' ])
+                                               'supplier', 'customer' ],oerp=UID, uid=OERP_INSTANCE)
     for v in vals:
         if v.get('is_company'):
             try:
                 country=None
                 if v.get('country_id'):
-                    country_name =  v.get('country_id')[1]
-                    res = Country.objects.filter(name=country_name)#__icontains=str(country_name))
+                    res = Country.objects.filter(name=v.get('country_id'))#__icontains=str(country_name))
                     if len(res)>0:
                         country = res[0]
                     else:
@@ -167,7 +126,7 @@ def make_customers(country,shop, comp):
 def get_products():
     # get some product definitions from ERP
     #type = consu, service, product (Consumable aka don't manage Inventory, Service non-physical, Stockable Product aka manage stock
-    vals = api.search_read_erp('product.template', [('type','in',['consu','product'])], ['name', 'default_code', 'list_price' ])
+    vals = api.search_read_erp('product.template', [('type','in',['consu','product'])], ['name', 'default_code', 'list_price' ],oerp=UID, uid=OERP_INSTANCE)
     for v in vals:
         #print v
         prod, c = Product.objects.get_or_create(name=v['name'], default_code=v['default_code'],list_price=v['list_price'])

@@ -56,6 +56,13 @@ if [[ "" !=  "$PID" ]]; then
   kill -9 $PID
 fi
 
+#kill off django
+PID=`ps -eaf | grep django | grep -v grep | awk '{print $2}'`
+if [[ "" !=  "$PID" ]]; then
+  echo "killing $PID"
+  kill -9 $PID
+fi
+
 source venv/bin/activate
 
 cd odoo10
@@ -72,15 +79,36 @@ echo "Initialize Blank DB '$database'"  >/dev/null
 ./odoo-bin -d $database #--addons "$DIR/odoo10/addons/"
 echo "Update Base Module"
 ./odoo-bin -d $database --db_user $username --db_password $password -u base  --stop-after-init
-echo "Install BBOXX Modules"
-./odoo-bin -d $database -i stock,mrp,sale,account,account_accountant,purchase,subscription --stop-after-init
+echo "Install Other Modules"
+#./odoo-bin -d $database -i stock,mrp,sale,account,account_accountant,purchase,subscription --stop-after-init
 
-./odoo-bin
+./odoo-bin &
+
+sleep 3
 
 cd ../pulse
 python manage.py makemigrations
 python manage.py migrate
-python manage.py runserver
+#python manage.py runserver
+
+python manage.py shell <<ORM   # Start django shell.
+import bridge.demo as bd
+
+ORM
+
+#kill off odoo again
+PID=`ps -eaf | grep odoo | grep -v grep | awk '{print $2}'`
+if [[ "" !=  "$PID" ]]; then
+  echo "killing $PID"
+  kill -9 $PID
+fi
+
+#kill off django again
+PID=`ps -eaf | grep django | grep -v grep | awk '{print $2}'`
+if [[ "" !=  "$PID" ]]; then
+  echo "killing $PID"
+  kill -9 $PID
+fi
 
 
 # -----------------------------------------------------------------
