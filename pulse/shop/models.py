@@ -31,7 +31,7 @@ log = logging.getLogger(__name__)
 
 from bridge import api
 
-UID, OERP_INSTANCE = api.auth_erp()
+UID = api.auth_erp()
 
 
 
@@ -90,6 +90,7 @@ class Customer(models.Model):
 
     def save(self, *args, **kwargs):
         fields_dict = {}
+        # fields = api.inspect_erp('res.partner')
         for field in self._meta.get_fields():
             # do not write 'id' or foreign key fields to ERP
             if not field.is_relation and field.name != 'id':
@@ -97,30 +98,19 @@ class Customer(models.Model):
                 if getattr(self, field.name):
                     fields_dict[field.name] = getattr(self, field.name)
         fields_dict['name'] = fields_dict.get('name', '') + ' ' + fields_dict.get('last', '')
-        if not self.pk: #overwrite the create() method
+        if not self.pk:  # overwrite the create() method
             fields_dict['customer'] = True
-            erpid = OERP_INSTANCE.create('res.partner', fields_dict)
+            erpid = api.create_erp('res.partner', fields_dict)
             # don't save if no erpid is returned
             if erpid:
                 self.erpid = erpid
                 super(Customer, self).save(*args, **kwargs)
-        else: #overwrite the save() method
-            OERP_INSTANCE.write('res.partner', [self.erpid], fields_dict)
-            super(Customer, self).save(*args, **kwargs)  # Call the "real" save() method.
+        else:  # overwrite the save() method
+            api.write_erp('res.partner', [self.erpid], fields_dict)
+
+        super(Customer, self).save(*args, **kwargs)  # Call the "real" save() method.
 
 
-            # >>> oerp = oerplib.OERP(server='localhost', database='db_name', protocol='xmlrpc', port=8069)
-            #
-            #
-            # >>> partner_id = oerp.create('res.partner', {'name': 'Jacky Bob', 'lang': 'fr_FR'})
-            # >>> partner_data = oerp.read('res.partner', [partner_id], ['name'])
-            # >>> oerp.write('res.partner', [partner_id], {'name': 'Charly Bob'})
-            # True
-            # >>> partner_ids = oerp.search('res.partner', [('name', 'ilike', 'Bob')])
-            # >>> oerp.unlink('res.partner', [partner_id])
-            #
-            # >>> user_obj = oerp.get('res.users')
-            # >>> user_obj.write([1], {'name': "Dupont D."})
 
 # @receiver(post_save, sender=Customer)
 # def set_erp_id(sender, instance=None, created=False, **kwargs):

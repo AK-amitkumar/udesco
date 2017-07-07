@@ -23,30 +23,12 @@ import datetime
 
 #following is NOT postgres database settings - it is odoo settings
 #pg database connections are supposed to match with odoo10/debian/odoo.conf
-USERNAME = 'aiden'
-PASSWORD = 'odoo'
-DB = 'odoo_demo'
-# SOCK_MODELS = xmlrpclib.ServerProxy('http://localhost:8069/xmlrpc/2/object')
-# SOCK_COMMON = xmlrpclib.ServerProxy('http://localhost:8069/xmlrpc/2/common')
-
-import oerplib
 
 import api
 
-UID, OERP_INSTANCE = api.auth_erp()
+UID = api.auth_erp()
 
-# >>> oerp = oerplib.OERP(server='localhost', database='db_name', protocol='xmlrpc', port=8069)
-#
-#
-# >>> partner_id = oerp.create('res.partner', {'name': 'Jacky Bob', 'lang': 'fr_FR'})
-# >>> partner_data = oerp.read('res.partner', [partner_id], ['name'])
-# >>> oerp.write('res.partner', [partner_id], {'name': 'Charly Bob'})
-# True
-# >>> partner_ids = oerp.search('res.partner', [('name', 'ilike', 'Bob')])
-# >>> oerp.unlink('res.partner', [partner_id])
-#
-# >>> user_obj = oerp.get('res.users')
-# >>> user_obj.write([1], {'name': "Dupont D."})
+
 
 def make_demo_function():
     print 'ERP res_country --> Django Country'
@@ -65,7 +47,7 @@ def make_demo_function():
 
 def get_countries():
     #get countries from res_country table
-    vals = api.search_read_erp('res.country', [], ['name','code'],oerp=UID, uid=OERP_INSTANCE)
+    vals = api.search_read_erp('res.country', [], ['name','code'])
     for v in vals:
         p, c = Country.objects.get_or_create(code=v['code'], name=v['name'])
 
@@ -76,13 +58,14 @@ def get_company():
     #link Pulse company to Pulse country depending on what link is in ERP
     vals = api.search_read_erp('res.partner', [], ['name', 'company_id', 'country_id', 'email', 'phone',
                                                'street', 'street2', 'city', 'zip', 'is_company',
-                                               'supplier', 'customer' ],oerp=UID, uid=OERP_INSTANCE)
+                                               'supplier', 'customer' ])
     for v in vals:
         if v.get('is_company'):
             try:
                 country=None
                 if v.get('country_id'):
-                    res = Country.objects.filter(name=v.get('country_id'))#__icontains=str(country_name))
+                    country_name =  v.get('country_id')[1]
+                    res = Country.objects.filter(name=country_name)#__icontains=str(country_name))
                     if len(res)>0:
                         country = res[0]
                     else:
@@ -126,7 +109,7 @@ def make_customers(country,shop, comp):
 def get_products():
     # get some product definitions from ERP
     #type = consu, service, product (Consumable aka don't manage Inventory, Service non-physical, Stockable Product aka manage stock
-    vals = api.search_read_erp('product.template', [('type','in',['consu','product'])], ['name', 'default_code', 'list_price' ],oerp=UID, uid=OERP_INSTANCE)
+    vals = api.search_read_erp('product.template', [('type','in',['consu','product'])], ['name', 'default_code', 'list_price' ])
     for v in vals:
         #print v
         prod, c = Product.objects.get_or_create(name=v['name'], default_code=v['default_code'],list_price=v['list_price'])
