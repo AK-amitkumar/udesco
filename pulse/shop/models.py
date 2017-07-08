@@ -97,7 +97,7 @@ class Customer(models.Model):
                 # cannot write None to the ERP fields
                 if getattr(self, field.name):
                     fields_dict[field.name] = getattr(self, field.name)
-        fields_dict['name'] = fields_dict.get('name', '') + ' ' + fields_dict.get('last', '')
+        fields_dict['name'] = fields_dict.get('first', '') + ' ' + fields_dict.get('last', '')
         if not self.pk:  # overwrite the create() method
             fields_dict['customer'] = True
             erpid = api.create_erp('res.partner', fields_dict)
@@ -109,33 +109,23 @@ class Customer(models.Model):
             api.write_erp('res.partner', [self.erpid], fields_dict)
             super(Customer, self).save(*args, **kwargs)  # Call the "real" save() method.
 
+class Supplier(models.Model):
+    # res_partner of crm = True  // alternative is supplier = True
+    erpid = models.IntegerField(null=True, blank=True)  # Unique CRM Id
+    name = models.CharField(max_length=200)  # first and last
+    # shop = models.ForeignKey('Shop') # linked through the invoice, not the shop
+    city = models.CharField(max_length=200)
+    street = models.CharField(max_length=200)
+    street2 = models.CharField(max_length=200, null=True, blank=True)
+    zip = models.CharField(max_length=200)
+    country = models.ForeignKey('Country')
+    email = models.EmailField(null=True, blank=True)
+    phone = models.CharField(max_length=200, null=True, blank=True)
+
+    def __unicode__(self):  # __str__ on Python 3
+        return self.name
 
 
-# @receiver(post_save, sender=Customer)
-# def set_erp_id(sender, instance=None, created=False, **kwargs):
-#     fields_dict = {}
-#     # fields = api.inspect_erp('res.partner')
-#     for field in instance._meta.get_fields():
-#         # do not write 'id' or foreign key fields to ERP
-#         if not field.is_relation and field.name != 'id':
-#             # cannot write None to the ERP fields
-#             if getattr(instance, field.name):
-#                 fields_dict[field.name] = getattr(instance, field.name)
-#     fields_dict['name'] = fields_dict.get('name', '') + ' ' + fields_dict.get('last', '')
-#     if created:
-#         fields_dict['customer'] = True
-#         erpid = api.create_erp('res.partner',fields_dict)
-#         if erpid and instance.id != erpid:
-#             instance.erpid = erpid
-#             instance.save(saving_erpid=True)
-#         elif not erpid: #if not erpid
-#             #was not created in the erp, you shoule probably delete this
-#             instance.delete()
-#         # log.warning('New Shop Created %s'%(kwargs.get('instance')))
-#         print 'Created Post-save'
-#     elif not instance.saving_erpid:
-#         print 'Write Post-save'
-#         api.write_erp('res_partner', [instance.erpid], fields_dict)
 
 
 PAYMENT_STATE = (('draft','Draft'),('downpay','Downpay'),('late','Late'),('normal','Normal'),('defaulted','Defaulted'),('repo','Repossessed'))
@@ -151,22 +141,6 @@ class CRM(models.Model):
     payg = models.NullBooleanField(null=True, blank=True)  # is it a PAYG payment model - inherits from shop
     def __unicode__(self):  # __str__ on Python 3
         return self.erpid
-
-
-class Supplier(models.Model):
-    # res_partner of crm = True  // alternative is supplier = True
-    erpid = models.IntegerField(null=True, blank=True)  # Unique CRM Id
-    name = models.CharField(max_length=200) #first and last
-    #shop = models.ForeignKey('Shop') # linked through the invoice, not the shop
-    city = models.CharField(max_length=200)
-    street = models.CharField(max_length=200)
-    street2 = models.CharField(max_length=200, null=True, blank=True)
-    zip = models.CharField(max_length=200)
-    country = models.ForeignKey('Country')
-    email = models.EmailField(null=True, blank=True)
-    phone = models.CharField(max_length=200, null=True, blank=True)
-    def __unicode__(self):  # __str__ on Python 3
-        return self.name
 
 
 
