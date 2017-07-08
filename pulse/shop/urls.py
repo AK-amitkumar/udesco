@@ -17,4 +17,8 @@ urlpatterns = [
     # parameter is crm_id - filter to crm_product records for that crm
     url(r'^crm_product/datatable/crm_id/(?P<crm_id>[0-9]+)/$', ss_views.CRMProductListJson.as_view(),
         name='crm_product_list_json'),
+    #for the autocomplete field
+    url(r'^product_select_options/$', views.product_select_options, name='product_select_options'),
+    url(r'^qty_remaining/$', views.qty_remaining, name='qty_remaining'),
+    
     ]

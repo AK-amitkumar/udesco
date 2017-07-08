@@ -44,6 +44,40 @@ class CRMForm(ModelForm):
     # phone = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
 
 
+'''
+I need a CustomChoiceField that accepts .choices (CharField won't take .choices)
+But I don't need the Choices validated method, which checks to see if the value selected
+is in choices. When I set the units Select input in javascript, it doesn't update the
+django choices, and the POST will fail validation.
+Override validate https://github.com/django/django/blob/master/django/forms/fields.py
+'''
+class CustomChoiceField(forms.ChoiceField):
+    def validate(self, value):
+        pass
+
+
+class CRMProductFormsetLine(forms.Form):
+    product = forms.CharField(widget=forms.TextInput(attrs={'class':'product form-control'})) #class = food
+    qty = CustomChoiceField(widget=forms.Select(attrs={'class':'units form-control'}))
+    serial_number = forms.CharField()
+    #make following readonly
+    amount = forms.FloatField(widget=forms.NumberInput(attrs={'class':'amt form-control'}))
+    #instead of passing initial to formset, I have to go one by one in form and pass as kwargs to forms in formset
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class CRMProductForm(ModelForm):
     def __init__(self, *args, **kwargs):
         # SET 'form-control' class on text fields to make them bootstrap style
@@ -53,7 +87,7 @@ class CRMProductForm(ModelForm):
                 field.field.widget.attrs['class'] = 'form-control'
         # SET required = False to overwrite the form-control, which sets it to True
         self.fields['imei'].required = False
-        self.fields['quantity'].required = False
+        self.fields['qty'].required = False
 
     class Meta:
         model = CRMProduct

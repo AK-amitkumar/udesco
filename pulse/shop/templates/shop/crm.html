@@ -40,7 +40,7 @@
 
 
       {% if crm %}
-       <h2>CRM Products</h2>
+       <h2>CRM product</h2>
 <table id="cptable" class="display" width="100%" cellspacing="0">
         <thead>
             <tr>
@@ -68,13 +68,43 @@
 
         </tbody>
     </table>
+      {% else %}
+      <!-- No crm, -->
       {% endif %}
 
   </div>
 </div>
 <div class="row">
   <div class="col-md-12">
+
        <h2>Actions</h2>
+
+      <!-- formset of the manytomany CRMProduct model - aka formset to add/remove product -->
+
+<form method="post" action="" class="form-inline">
+     {% csrf_token %}
+    {{rform.name.label_tag}}{{rform.name}}
+
+    <hr>
+    {{ formset.management_form }}
+    {% for form in formset %}
+   <div class="form-inline line-item">
+            {{ form.product }}
+       {{ form.serial_number }}
+             {{ form.qty }}
+        {{ form.amount }}
+         
+
+ {% if form.instance.pk %}{{ form.DELETE }}{% endif %}
+
+       <!-- <span class='glyphicon glyphicon-remove remove_item' aria-hidden='true'></span> -->
+        </div> <br>
+    {% endfor %}
+
+    <button type="submit" class="btn btn-primary">Submit</button>
+
+</form>
+
 
 
 
@@ -94,6 +124,7 @@
 
 
 {% block js %}
+//============DATATABLE=====================
     var oTable = $('#cptable').dataTable({
         // ...
         "processing": true,
@@ -101,4 +132,85 @@
         "ajax": "{% url 'crm_product_list_json' crm_id %}"
     });
     // ...
+
+
+//============AUTOCOMPLETE====================
+
+var cache = {};
+/* Bind autocomplete to inputs on focus - does this make cache obsolete? */
+$(document).on("focus",".product",function(e) {
+
+if ( !$(this).data("autocomplete") ) {
+
+$( ".product" ).autocomplete(
+/* PARAMETERS */
+{
+minLength: 2,
+
+source: function( request, response ) {
+/* source FROM CACHE */
+var term = request.term;
+if ( term in cache ) {
+response( cache[ term ] );
+return;
+}
+/* ELSE source FROM DATABASE */
+$.getJSON( "{% url 'product_select_options' %}", request, function( data, status, xhr ) {
+cache[ term ] = data;
+response( data );
+});  /* END .getJSON */
+},  /* END source PARAMETER */
+select:function(event,ui) {
+
+var thisrow = $(this).closest('.form-inline');
+thisrow.find(".qty").val(1.00);
+
+
+
+
+$.post("{% url 'qty_remaining' %}", {item_id:ui.item.id},
+function(data) {
+if (data) {
+
+
+/*
+this_select = thisrow.find('.units');
+this_select.empty();
+
+$.each(data, function(key, value) {
+
+this_select.append($("<option></option>").attr("value", value[0]).text(value[1]));
+});
+
+*/
+// Display how many are remaining
+// Make that the limit on the qty remaining field
+
+
+}}
+); // end .POST
+
+
+
+
+}  // end SELECT function
+}  );  // END PARAMETERS ); END autocomplete
+} // end If autocomplete
+}); //end on focus
+
+
+/* ---------
+------------
+some plugin that handles
+deleting and adding formsets dynamically
+REPO: https://github.com/elo80ka/django-dynamic-formset
+DOCS: https://github.com/elo80ka/django-dynamic-formset/blob/master/docs/usage.rst
+------------
+-----------*/
+
+    $('.line-item').formset({
+        addText: 'add product',
+        deleteText: 'remove',
+prefix: '{{ formset.prefix }}'
+    });
 {% endblock %}

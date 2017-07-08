@@ -52,7 +52,7 @@ class Migration(migrations.Migration):
                 ('imei', models.CharField(blank=True, max_length=200, null=True)),
                 ('active', models.BooleanField(default=True)),
                 ('price_unit', models.FloatField(blank=True, null=True)),
-                ('quantity', models.FloatField(blank=True, null=True)),
+                ('qty', models.FloatField(blank=True, null=True)),
                 ('crm', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='shop.CRM')),
             ],
         ),

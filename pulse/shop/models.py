@@ -185,6 +185,10 @@ class Product(models.Model):
             api.write_erp('product.template', [self.erpid], fields_dict)
             super(Product, self).save(*args, **kwargs)  # Call the "real" save() method.
 
+    def get_qty_remaining(self,*args,**kwargs):
+        #get qty remaining from the erp somehow
+        return 100
+
 
 
 ENABLE_STATE = (('enabled','Enabled'),('disabled','Disabled'))
@@ -201,16 +205,16 @@ class CRMProduct(models.Model):
     condition = models.CharField(max_length=200, choices=CONDITION, default = 'normal')
     #price = models.FloatField()
     #tax set in ERP
-    #amount - calculated from quantity, price and tax - in ERP
+    #amount - calculated from qty, price and tax - in ERP
     serial_number = models.CharField(max_length=200, null=True, blank=True)#unique=True) only on control unit
     imei = models.CharField(max_length=200, null=True, blank=True)
     active = models.BooleanField(default=True) # does crm have product
     price_unit = models.FloatField(null=True, blank=True) # at time of install
-    quantity = models.FloatField(null=True, blank=True)
+    qty = models.FloatField(null=True, blank=True)
     def amount(self):  # __str__ on Python 3
-        quantity = self.quantity if self.quantity else 0
+        qty = self.qty if self.qty else 0
         price_unit = self.price_unit if self.price_unit else 0
-        return price_unit * quantity
+        return price_unit * qty
     def __unicode__(self):  # __str__ on Python 3
         return '%s, %s'%(self.product.default_code,self.serial_number)
 
@@ -249,10 +253,10 @@ class CRMProduct(models.Model):
 #     product = models.ForeignKey('Product', on_delete=models.CASCADE) #corresponds to product_product
 #     invoice = models.ForeignKey('Invoice', on_delete=models.CASCADE)
 #     #account_id - income or expense account
-#     quantity = models.FloatField()
+#     qty = models.FloatField()
 #     #price = models.FloatField()
 #     #tax set in ERP
-#     #amount - calculated from quantity, price and tax - in ERP
+#     #amount - calculated from qty, price and tax - in ERP
 #     #serial_number = models.CharField(max_length=200)
 #     #imei = models.CharField(max_length=200)
 
