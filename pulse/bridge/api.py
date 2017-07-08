@@ -49,10 +49,16 @@ def auth_erp(username = USERNAME, password = PASSWORD, db = DB, sock_common = SO
     #sock_common = xmlrpclib.ServerProxy('http://localhost:8069/xmlrpc/2/common')
     try:
         uid = sock_common.authenticate(db, username, password, {})
-    except:
-        init_uid =  sock_common.authenticate(db, 'admin', 'admin', {})
-        sock_models.execute_kw(db, init_uid, password, 'res.users', 'write', [init_uid, {'login':username,'password':password}])
-        uid = sock_common.authenticate(db, username, password, {})
+        if not uid:
+            init_uid = sock_common.authenticate(db, 'admin', 'admin', {})
+            sock_models.execute_kw(db, init_uid, 'admin', 'res.users', 'write',
+                                   [init_uid, {'login': username, 'password': password}])
+            uid = sock_common.authenticate(db, username, password, {})
+    except Exception as e:
+        print e
+        # init_uid =  sock_common.authenticate(db, 'admin', 'admin', {})
+        # sock_models.execute_kw(db, init_uid, password, 'res.users', 'write', [init_uid, {'login':username,'password':password}])
+        # uid = sock_common.authenticate(db, username, password, {})
     return uid
 
 UID = auth_erp()
@@ -86,9 +92,16 @@ def read_erp(model,function,username = USERNAME, password = PASSWORD, db = DB,
         print 'reauth'
         uid = auth_erp(username = username, password = password, db = db, sock_common = sock_common)
     #sock_models = xmlrpclib.ServerProxy('http://localhost:8069/xmlrpc/2/object')
-    ret = sock_models.execute_kw(db, uid, password,
-        model, function #'check_access_rights',
-        ['read'], {'raise_exception': False})
+    try:
+        ret = sock_models.execute_kw(db, uid, password,
+            model, function #'check_access_rights',
+            ['read'], {'raise_exception': False})
+    except Exception as e:
+        print e
+        if "Fault 2: 'None'" in str(e):
+            ret = str(e)
+        else:
+            raise
     return ret
 
 
@@ -110,12 +123,18 @@ def search_erp(model,search_list_of_tuples,username = USERNAME, password = PASSW
         print 'reauth'
         uid = auth_erp(username = username, password = password, db = db, sock_common = sock_common)
     #sock_models = xmlrpclib.ServerProxy('http://localhost:8069/xmlrpc/2/object')
-
-    ids = sock_models.execute_kw(db, uid, password,
-        model, 'search',
-        [search_list_of_tuples], #[('name','=','Stock')]
-        #{'offset': 10, 'limit': 5}
-                                 )
+    try:
+        ids = sock_models.execute_kw(db, uid, password,
+            model, 'search',
+            [search_list_of_tuples], #[('name','=','Stock')]
+            #{'offset': 10, 'limit': 5}
+            )
+    except Exception as e:
+        print e
+        if "Fault 2: 'None'" in str(e):
+            ids=[]
+        else:
+            raise
     return ids
 
 
@@ -139,11 +158,17 @@ def search_read_erp(model,search_list_of_tuples,fields,username = USERNAME, pass
         print 'reauth'
         uid = auth_erp(username = username, password = password, db = db, sock_common = sock_common)
     #sock_models = xmlrpclib.ServerProxy('http://localhost:8069/xmlrpc/2/object')
-    vals = sock_models.execute_kw(db, uid, password,
-                      model, 'search_read',
-                      [search_list_of_tuples],
-                      {'fields': fields, 'limit': limit})
-
+    try:
+        vals = sock_models.execute_kw(db, uid, password,
+                          model, 'search_read',
+                          [search_list_of_tuples],
+                          {'fields': fields, 'limit': limit})
+    except Exception as e:
+        print e
+        if "Fault 2: 'None'" in str(e):
+            vals=[]
+        else:
+            raise
     return vals
 
 #CREATE

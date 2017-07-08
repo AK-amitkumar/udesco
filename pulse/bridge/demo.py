@@ -109,10 +109,26 @@ def make_customers(country,shop, comp):
 def get_products():
     # get some product definitions from ERP
     #type = consu, service, product (Consumable aka don't manage Inventory, Service non-physical, Stockable Product aka manage stock
-    vals = api.search_read_erp('product.template', [('type','in',['consu','product'])], ['name', 'default_code', 'list_price' ])
-    for v in vals:
-        #print v
-        prod, c = Product.objects.get_or_create(name=v['name'], default_code=v['default_code'],list_price=v['list_price'])
+    #IF DO NOT EXIST IN ERP - CREATE IN DJANGO --> model create method will create in ERP
+    if not api.search_erp('product.template', []):#('type', 'in', ['consu', 'product'])]):
+        print 'NO PRODUCTS DEFINED, creating 10 random ones'
+        for i in range(10):
+            rando = randint(0, 3)
+            create_dict = {'default_code':fake.uuid4(),'name':fake.word(),'list_price':fake.random_int()}
+            if rando == 1:
+                create_dict['type'] = 'consu'
+            elif rando == 2:
+                create_dict['type'] = 'product'
+            else:
+                create_dict['type'] = 'service'
+            prod, c = Product.objects.get_or_create(**create_dict)
+    else: #ELSE READ data from ERP and get_or_create
+        vals = api.search_read_erp('product.template', [('type','in',['consu','product'])], ['name', 'default_code', 'list_price','type' ])
+        for v in vals:
+            #print v
+            prod, c = Product.objects.get_or_create(erpid=v['id'],name=v['name'],
+                                                    default_code=v['default_code'],list_price=v['list_price']
+                                                    ,type=v['type'])
     return None
 
 

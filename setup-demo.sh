@@ -76,17 +76,17 @@ echo "Drop DB '$database'"
 psql template1 -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$database';"  &>/dev/null
 dropdb --if-exists $database
 echo "Initialize Blank DB '$database'"  >/dev/null
-./odoo-bin -d $database #--addons "$DIR/odoo10/addons/"
+./odoo-bin -d $database #--without-demo=stock,mrp,sale,account,account_accountant,purchase,subscription
 echo "Update Base Module"
-./odoo-bin -d $database --db_user $username --db_password $password -u base  --stop-after-init
+./odoo-bin -d $database --db_user $username --db_password $password -u base --stop-after-init
 echo "Install Other Modules"
-#./odoo-bin -d $database -i stock,mrp,sale,account,account_accountant,purchase,subscription --stop-after-init
-
+./odoo-bin -d $database -i stock,mrp,sale,account,account_accountant,purchase,subscription --stop-after-init
 ./odoo-bin &
 
 sleep 3
 
 cd ../pulse
+rm -f db.sqlite3
 python manage.py makemigrations
 python manage.py migrate
 #python manage.py runserver

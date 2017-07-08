@@ -107,8 +107,7 @@ class Customer(models.Model):
                 super(Customer, self).save(*args, **kwargs)
         else:  # overwrite the save() method
             api.write_erp('res.partner', [self.erpid], fields_dict)
-
-        super(Customer, self).save(*args, **kwargs)  # Call the "real" save() method.
+            super(Customer, self).save(*args, **kwargs)  # Call the "real" save() method.
 
 
 
@@ -178,16 +177,39 @@ class Supplier(models.Model):
 # They are join in a group of similar goods, which are called template.
 # shop: product pages use product.template (when order is created, then product.product is used).
 
+
+PRODUCT_TYPE = (('service','Service'),('stock','Stockable'),('consu','Consumable'))
 class Product(models.Model):
     # product_product - is a product 'variant' of product.template - when you create an order, order line has fk to this
     # procuct_template - product_product has a fk to this - this is where most of the product info is
 
     # so what should happen is this model should be more like a product_template
+    erpid = models.IntegerField(null=True, blank=True)
     name = models.CharField(max_length=200)
-    default_code = models.CharField(max_length=200, unique = True)
+    default_code = models.CharField(max_length=200)# not unique in ERP, use erpid for identification
     list_price = models.FloatField(default=0)
+    type = models.CharField(max_length=200, choices=PRODUCT_TYPE,null=True,blank=True)
     def __unicode__(self):  # __str__ on Python 3
         return self.default_code
+    def save(self, *args, **kwargs):
+        fields_dict = {}
+        # fields = api.inspect_erp('res.partner')
+        for field in self._meta.get_fields():
+            # do not write 'id' or foreign key fields to ERP
+            if not field.is_relation and field.name != 'id':
+                # cannot write None to the ERP fields
+                if getattr(self, field.name):
+                    fields_dict[field.name] = getattr(self, field.name)
+        fields_dict['name'] = fields_dict.get('name', '') + ' ' + fields_dict.get('last', '')
+        if not self.pk:  # overwrite the create() method
+            erpid = api.create_erp('product.template', fields_dict)
+            # don't save if no erpid is returned
+            if erpid:
+                self.erpid = erpid
+                super(Product, self).save(*args, **kwargs)
+        else:  # overwrite the save() method
+            api.write_erp('product.template', [self.erpid], fields_dict)
+            super(Product, self).save(*args, **kwargs)  # Call the "real" save() method.
 
 
 
