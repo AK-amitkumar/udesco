@@ -91,6 +91,7 @@
    <div class="form-inline line-item">
             {{ form.product }}
        {{ form.serial_number }}
+       <div class = 'qty-remaining'></div>
              {{ form.qty }}
         {{ form.amount }}
          
@@ -134,8 +135,8 @@
     // ...
 
 
-//============AUTOCOMPLETE====================
-
+//============AUTOCOMPLETE FOR PRODUCT====================
+var product_id = 0;
 var cache = {};
 /* Bind autocomplete to inputs on focus - does this make cache obsolete? */
 $(document).on("focus",".product",function(e) {
@@ -164,27 +165,19 @@ select:function(event,ui) {
 
 var thisrow = $(this).closest('.form-inline');
 thisrow.find(".qty").val(1.00);
+product_id = ui.item.id;
 
 
-
+//--------------THE QUANTITY REMAINING CALLBACK----
 
 $.post("{% url 'qty_remaining' %}", {item_id:ui.item.id},
 function(data) {
 if (data) {
 
+qr = thisrow.find('.qty-remaining');
+//alert(data)
+qr.html(data);
 
-/*
-this_select = thisrow.find('.units');
-this_select.empty();
-
-$.each(data, function(key, value) {
-
-this_select.append($("<option></option>").attr("value", value[0]).text(value[1]));
-});
-
-*/
-// Display how many are remaining
-// Make that the limit on the qty remaining field
 
 
 }}
@@ -198,6 +191,43 @@ this_select.append($("<option></option>").attr("value", value[0]).text(value[1])
 } // end If autocomplete
 }); //end on focus
 
+//============AUTOCOMPLETE FOR SERIAL NUMBER OF PRODUCT====================
+
+var cache2 = {};
+/* Bind autocomplete to inputs on focus - does this make cache2 obsolete? */
+$(document).on("focus",".serial_number",function(e) {
+
+if ( !$(this).data("autocomplete") ) {
+
+$( ".serial_number" ).autocomplete(
+/* PARAMETERS */
+{
+minLength: 2,
+
+source: function( request, response ) {
+/* source FROM cache2 */
+var term = request.term;
+if ( term in cache2 ) {
+response( cache2[ term ] );
+return;
+}
+/* ELSE source FROM DATABASE */
+$.getJSON( "{% url 'serial_number_select_options'  %}",      {
+        product_id: product_id,
+term: term,
+     }, function( data, status, xhr ) {
+cache2[ term ] = data;
+response( data );
+});  /* END .getJSON */
+},  /* END source PARAMETER */
+select:function(event,ui) {
+
+
+
+}  // end SELECT function
+}  );  // END PARAMETERS ); END autocomplete
+} // end If autocomplete
+}); //end on focus
 
 /* ---------
 ------------

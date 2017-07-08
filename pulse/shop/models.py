@@ -195,6 +195,21 @@ ENABLE_STATE = (('enabled','Enabled'),('disabled','Disabled'))
 CONDITION = (('normal','Normal'),('damaged','Damaged'))
 
 class CRMProduct(models.Model):
+    '''
+    
+    CRMProduct is many to many between CRM (customers account - which they are invoiced for)
+    and Product (corresponds to product.template)
+    
+    In some ways the CRMProduct is like invoice line or sale order line in that it takes product unit_price * qty = amt
+    and the CRM, which corresponds to a sale order and later to the invoice has CRMProducts for 'lines'
+     
+     In other ways it is similar to a Product or whatever you would call it in smart solar
+     CRMProducts of certain product types will have a serial number and max quantity of 1
+     Some products will have no serial number and multiple quantity is possible
+    
+    
+    
+    '''
     # each line here should roll up to an sale_order_line - not account_invoice_line
     product = models.ForeignKey('Product', on_delete=models.CASCADE) #corresponds to product_product
     crm = models.ForeignKey('CRM', on_delete=models.CASCADE)
@@ -211,10 +226,11 @@ class CRMProduct(models.Model):
     active = models.BooleanField(default=True) # does crm have product
     price_unit = models.FloatField(null=True, blank=True) # at time of install
     qty = models.FloatField(null=True, blank=True)
-    def amount(self):  # __str__ on Python 3
-        qty = self.qty if self.qty else 0
-        price_unit = self.price_unit if self.price_unit else 0
-        return price_unit * qty
+    amount = models.FloatField(null=True, blank=True) #set in the crm.html javascript
+    # def amount(self):  # __str__ on Python 3
+    #     qty = self.qty if self.qty else 0
+    #     price_unit = self.price_unit if self.price_unit else 0
+    #     return price_unit * qty
     def __unicode__(self):  # __str__ on Python 3
         return '%s, %s'%(self.product.default_code,self.serial_number)
 
@@ -236,16 +252,7 @@ class CRMProduct(models.Model):
 #     ('cancel', 'cancel'),
 # )
 #
-# class Invoice(models.Model):
-#     # account_invoice
-#     crm = models.ForeignKey('CRM')
-#     payment_term = models.CharField(max_length=200) #payment_term_id in ERP
-#     state = models.CharField(max_length=200, choices = INVOICE_STATES)
-#     date_invoice = models.DateTimeField()
-#     invoice_lines = models.ManyToManyField('Product', through='InvoiceLine')
-#     #journal and account will be set in ERP - no need to reinvent the accounting wheel on frontend
-#     #journal_id
-#     #account_id
+
 #
 # #This should probably be a many to many field with Product and Invoice
 # class InvoiceLine(models.Model):

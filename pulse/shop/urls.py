@@ -20,5 +20,6 @@ urlpatterns = [
     #for the autocomplete field
     url(r'^product_select_options/$', views.product_select_options, name='product_select_options'),
     url(r'^qty_remaining/$', views.qty_remaining, name='qty_remaining'),
-    
+    #for serial number autocomplete
+    url(r'^serial_number_select_options/$', views.serial_number_select_options, name='serial_number_select_options')
     ]

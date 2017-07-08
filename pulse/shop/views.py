@@ -232,10 +232,24 @@ def product_select_options(request):
 
 @csrf_exempt
 def qty_remaining(request):
+    #return quantity remaining
     product=Product.objects.get(pk=request.POST['item_id'])
     qty_remaining = product.get_qty_remaining()
     return JsonResponse(qty_remaining,safe=False)
 
+
+def serial_number_select_options(request):
+    product_id = request.GET.get('product_id', '')
+    json_resp_data = []
+    if request.is_ajax():
+        #get list of all available CRMProducts
+        crm_products = CRMProduct.objects.filter(product_id=product_id,crm=None).exclude(active=False)#maybe ignore some
+        q = request.GET.get('term', '')
+        #From these available products, choose a serial number
+        crm_products = crm_products.filter(serial_number__icontains = q )#[:20]#(dispname__icontains = q )[:20]
+        for p in crm_products:
+            json_resp_data.append({'id':p.serial_number,'label':p.serial_number,'value':p.name})
+    return JsonResponse(json_resp_data, safe=False)
 
 
 from django_datatables_view.base_datatable_view import BaseDatatableView

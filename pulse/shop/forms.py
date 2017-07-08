@@ -33,7 +33,7 @@ class CRMForm(ModelForm):
         #self.fields['street2'].required = False
     class Meta:
         model = CRM
-        exclude = ['crm_products','state', 'customer']
+        exclude = ['crm_products','state', 'customer','erpid','shop']
     # name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
     # email = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
     # street = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
@@ -58,8 +58,8 @@ class CustomChoiceField(forms.ChoiceField):
 
 class CRMProductFormsetLine(forms.Form):
     product = forms.CharField(widget=forms.TextInput(attrs={'class':'product form-control'})) #class = food
-    qty = CustomChoiceField(widget=forms.Select(attrs={'class':'units form-control'}))
-    serial_number = forms.CharField()
+    qty = forms.IntegerField(widget=forms.NumberInput(attrs={'class':'qty form-control'}))
+    serial_number = forms.CharField(widget=forms.TextInput(attrs={'class':'serial_number form-control'}))
     #make following readonly
     amount = forms.FloatField(widget=forms.NumberInput(attrs={'class':'amt form-control'}))
     #instead of passing initial to formset, I have to go one by one in form and pass as kwargs to forms in formset
