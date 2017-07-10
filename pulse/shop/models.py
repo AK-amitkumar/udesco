@@ -212,7 +212,7 @@ class CRMProduct(models.Model):
     '''
     # each line here should roll up to an sale_order_line - not account_invoice_line
     product = models.ForeignKey('Product', on_delete=models.CASCADE) #corresponds to product_product
-    crm = models.ForeignKey('CRM', on_delete=models.CASCADE)
+    crm = models.ForeignKey('CRM', on_delete=models.CASCADE, null=True, blank=True)
     #account_id - income or expense account
     start_date = models.DateTimeField(default = datetime.datetime.utcnow())
     end_date = models.DateTimeField(null=True, blank=True)
@@ -233,6 +233,11 @@ class CRMProduct(models.Model):
     #     return price_unit * qty
     def __unicode__(self):  # __str__ on Python 3
         return '%s, %s'%(self.product.default_code,self.serial_number)
+
+    def unlink(self):
+        #Unlink from a customer
+        self.crm=None
+        self.save() #do i need to super or something?
 
 # class Employee(models.Model):
 #     # hr_employee/res_partner

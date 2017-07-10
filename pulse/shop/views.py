@@ -243,12 +243,12 @@ def serial_number_select_options(request):
     json_resp_data = []
     if request.is_ajax():
         #get list of all available CRMProducts
-        crm_products = CRMProduct.objects.filter(product_id=product_id,crm=None).exclude(active=False)#maybe ignore some
+        crm_products = CRMProduct.objects.filter(product_id=product_id,crm=None).exclude(active=False, serial_number=False)#maybe ignore some
         q = request.GET.get('term', '')
         #From these available products, choose a serial number
         crm_products = crm_products.filter(serial_number__icontains = q )#[:20]#(dispname__icontains = q )[:20]
         for p in crm_products:
-            json_resp_data.append({'id':p.serial_number,'label':p.serial_number,'value':p.name})
+            json_resp_data.append({'id':p.serial_number,'label':p.serial_number,'value':p.serial_number})
     return JsonResponse(json_resp_data, safe=False)
 
 
