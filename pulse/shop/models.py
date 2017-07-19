@@ -239,6 +239,11 @@ class CRMProduct(models.Model):
         self.crm=None
         self.save() #do i need to super or something?
 
+    def return_product_choices(self):
+        #((k, k) for k in choices_list)
+        return [(self.id, self.product.name)]#{'id': self.id, 'label': self.product.name, 'value': self.product.name}
+
+
 # class Employee(models.Model):
 #     # hr_employee/res_partner
 #     # in ERP hr_employee.adress_id is a many2one to res_partner

@@ -57,11 +57,16 @@ class CustomChoiceField(forms.ChoiceField):
 
 
 class CRMProductFormsetLine(forms.Form):
-    product = forms.CharField(widget=forms.TextInput(attrs={'class':'product form-control'})) #class = food
+    #product = forms.CharField(widget=forms.TextInput(attrs={'class':'product form-control'}))
+    #product is actually a select thing
+    product = CustomChoiceField(widget=forms.Select(attrs={'class': 'product form-control'}))
+
+
+
     qty = forms.IntegerField(widget=forms.NumberInput(attrs={'class':'qty form-control'}))
     serial_number = forms.CharField(widget=forms.TextInput(attrs={'class':'serial_number form-control'}))
     #make following readonly
-    amount = forms.FloatField(widget=forms.NumberInput(attrs={'class':'amt form-control'}))
+    amount = forms.FloatField(widget=forms.NumberInput(attrs={'class':'amount form-control'}))
     #instead of passing initial to formset, I have to go one by one in form and pass as kwargs to forms in formset
 
 

@@ -176,7 +176,8 @@ if (data) {
 
 qr = thisrow.find('.qty-remaining');
 //alert(data)
-qr.html(data);
+qr.html(data['qty_remaining']);
+thisrow.find(".qty").attr('max',data['qty_allowed']);
 
 
 
