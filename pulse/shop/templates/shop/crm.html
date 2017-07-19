@@ -89,7 +89,8 @@
     {{ formset.management_form }}
     {% for form in formset %}
    <div class="form-inline line-item">
-            {{ form.product }}
+       {{ form.product_id }}
+            {{ form.product_display }}
        {{ form.serial_number }}
        <div class = 'qty-remaining'></div>
              {{ form.qty }}
@@ -139,11 +140,11 @@
 var product_id = 0;
 var cache = {};
 /* Bind autocomplete to inputs on focus - does this make cache obsolete? */
-$(document).on("focus",".product",function(e) {
+$(document).on("focus",".product_display",function(e) {
 
 if ( !$(this).data("autocomplete") ) {
 
-$( ".product" ).autocomplete(
+$( ".product_display" ).autocomplete(
 /* PARAMETERS */
 {
 minLength: 2,
@@ -166,6 +167,8 @@ select:function(event,ui) {
 var thisrow = $(this).closest('.form-inline');
 thisrow.find(".qty").val(1.00);
 product_id = ui.item.id;
+thisrow.find(".product_id").val(product_id);
+thisrow.find(".serial_number").val('');
 
 
 //--------------THE QUANTITY REMAINING CALLBACK----

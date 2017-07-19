@@ -241,7 +241,7 @@ class CRMProduct(models.Model):
 
     def return_product_choices(self):
         #((k, k) for k in choices_list)
-        return [(self.id, self.product.name)]#{'id': self.id, 'label': self.product.name, 'value': self.product.name}
+        return [(self.id, self.product.name),]#{'id': self.id, 'label': self.product.name, 'value': self.product.name}
 
 
 # class Employee(models.Model):

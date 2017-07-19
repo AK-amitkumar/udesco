@@ -57,10 +57,19 @@ class CustomChoiceField(forms.ChoiceField):
 
 
 class CRMProductFormsetLine(forms.Form):
-    #product = forms.CharField(widget=forms.TextInput(attrs={'class':'product form-control'}))
-    #product is actually a select thing
-    product = CustomChoiceField(widget=forms.Select(attrs={'class': 'product form-control'}))
+    def __init__(self, *args, **kwargs):
+        super(CRMProductFormsetLine, self).__init__(*args, **kwargs)
+        # choices = (('Option 1', 'Option 1'),('Option 2', 'Option 2'),)
+        # self.fields['product'].choices = choices
+    #product = CustomChoiceField(widget=forms.TextInput(attrs={'class': 'product form-control'}))
+    product_display = forms.CharField(
+        required=False,
+        # queryset = Food.objects.order_by('name'),
+        # widget=forms.CheckboxSelectMultiple
+        widget=forms.TextInput(attrs={'class': 'product_display'})
+    )
 
+    product_id = forms.IntegerField(widget=forms.HiddenInput(attrs={'class': 'product_id'}), required=False)
 
 
     qty = forms.IntegerField(widget=forms.NumberInput(attrs={'class':'qty form-control'}))

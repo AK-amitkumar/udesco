@@ -87,8 +87,8 @@ def crm(request, crm_id=None):
 
             for form in formset.ordered_forms:
                 cd = form.cleaned_data
-                product,qty,serial_number,amount = cd['product'],cd['qty'],cd['serial_number'],cd['amount']
-                #todo - 'product' is the name, I need to get the id as the val for that field
+                product_id,product_display,qty,serial_number,amount = cd['product_id'],cd['product_display'],cd['qty'],cd['serial_number'],cd['amount']
+                #todo - save crm_products with these values
 
 
             saved = form.save()
@@ -102,13 +102,16 @@ def crm(request, crm_id=None):
         #populate the empty formset with data from the many2many CRMProduct table
         #===========================
         for i, ingredient_info in enumerate(init_products_info):
-            # get recipe nuts['products']
-            # this ok - recipe only called if forloop hits
-            #products_choices = init_products_info[i]['choices']
-            formset[i].fields['product'].initial = init_products_info[i].return_product_choices()#product.name#['product']
+            formset[i].fields['product_id'].initial = init_products_info[i].product.id
+            formset[i].fields['product_display'].initial = init_products_info[i].product.name
+            #todo javascript in crm.html will set the product_id hidden field on select of 'product_display' autocomplete
+            #todo javascript will also REset qty=1, serial_number='' on select of 'product_display' autocomplete
+            #todo SOME kind of stop if quantity remaining is zero
+
+            #todo - set amount on select of 'product_display' to 1*list_price
+            #todo - set amout on select of qty to qty*list_price
 
 
-            # todo - 'product' is the name, I need to get the id as the val for that field
             formset[i].fields['qty'].initial = init_products_info[i].qty#['qty']
             formset[i].fields['serial_number'].initial = init_products_info[i].serial_number#['serial_number']
             formset[i].fields['amount'].initial = init_products_info[i].amount#['amount']
