@@ -58,6 +58,20 @@ def customer(request, customer_id=None):
     return render(request, 'shop/customer.html', context)
 
 
+def save_crmp_form_fields_to_model(cd,crm,object=None):
+    if cd.get('product_id'):
+        product_id, qty, serial_number, amount = cd['product_id'], cd['qty'], cd['serial_number'], cd['amount']
+        if object:
+            object.crm = crm
+            object.qty = qty
+            object.serial_number = serial_number
+            object.amount = amount
+            object.product_id = product_id
+            object.save()
+        else:
+            object = CRMProduct.objects.create(crm=crm,qty = qty,serial_number = serial_number,amount = amount,product_id = product_id)
+        return object.id
+        
 def crm(request, crm_id=None):
     # if this is a POST request we need to process the form data
     if crm_id:
@@ -79,19 +93,34 @@ def crm(request, crm_id=None):
         init_products_info = []
     CRMPFormset = formset_factory(CRMProductFormsetLine, can_delete=True, can_order=True, extra=extra)
     if request.method == 'POST':
-        formset=CRMPFormset(request.POST, request.FILES)
         # create a form instance and populate it with data from the request:
         form = CRMForm(request.POST, instance=crm)
+        formset = CRMPFormset(request.POST, request.FILES)
         # check whether it's valid:
-        if form.is_valid() and formset.is_valid():
-
-            for form in formset.ordered_forms:
-                cd = form.cleaned_data
-                product_id,product_display,qty,serial_number,amount = cd['product_id'],cd['product_display'],cd['qty'],cd['serial_number'],cd['amount']
-                #todo - save crm_products with these values
-
-
+        if form.is_valid():
+            form.save()
             saved = form.save()
+        # the following should only happen for crm in draft state
+        if 'edit_crm_products' in request.POST:
+            if formset.is_valid():
+                non_deleted_crmp_ids = []
+                for form in formset.ordered_forms: #ordered_forms excludes 'DELETE' = True rows
+                    cd = form.cleaned_data
+                    # if product_id update
+                    # if no id, createnew record
+                    # if delete flag, delete
+                    if cd.get('crm_product_id'):
+                        crmp = CRMProduct.objects.get(id = cd['crm_product_id'])
+                        #DO not run .update(), because signals will not run
+                        save_crmp_form_fields_to_model(cd, saved, object=crmp)
+                        non_deleted_crmp_ids.append(cd.get('crm_product_id'))
+                    else:#if not cd.get('DELETE'):
+                        cr_id = save_crmp_form_fields_to_model(cd, saved)
+                        non_deleted_crmp_ids.append(cr_id)
+                    #delete the ones marked as DELETE
+                delete_products = CRMProduct.objects.filter(crm=saved).exclude(id__in=non_deleted_crmp_ids)
+                for p in delete_products:
+                    p.delete()
             return HttpResponseRedirect(reverse('crm_detail', args=[saved.id]))
 
     # if a GET (or any other method) we'll create a blank form
@@ -102,6 +131,7 @@ def crm(request, crm_id=None):
         #populate the empty formset with data from the many2many CRMProduct table
         #===========================
         for i, ingredient_info in enumerate(init_products_info):
+            formset[i].fields['crm_product_id'].initial = init_products_info[i].id
             formset[i].fields['product_id'].initial = init_products_info[i].product.id
             formset[i].fields['product_display'].initial = init_products_info[i].product.name
             #todo javascript in crm.html will set the product_id hidden field on select of 'product_display' autocomplete

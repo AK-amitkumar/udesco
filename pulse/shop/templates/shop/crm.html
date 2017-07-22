@@ -89,6 +89,7 @@
     {{ formset.management_form }}
     {% for form in formset %}
    <div class="form-inline line-item">
+        {{ form.crm_product_id }}
        {{ form.product_id }}
             {{ form.product_display }}
        {{ form.serial_number }}
@@ -103,7 +104,7 @@
         </div> <br>
     {% endfor %}
 
-    <button type="submit" class="btn btn-primary">Submit</button>
+    <button type="submit" class="btn btn-primary" name="edit_crm_products">Submit</button>
 
 </form>
 

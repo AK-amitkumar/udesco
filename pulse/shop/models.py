@@ -243,6 +243,13 @@ class CRMProduct(models.Model):
         #((k, k) for k in choices_list)
         return [(self.id, self.product.name),]#{'id': self.id, 'label': self.product.name, 'value': self.product.name}
 
+    def save(self, *args, **kwargs):
+        if not self.pk:  # overwrite the create() method
+            print 'CRMP created'
+            super(CRMProduct, self).save(*args, **kwargs)
+        else:  # overwrite the save() method
+            print 'CRMP saved'
+            super(CRMProduct, self).save(*args, **kwargs)  #
 
 # class Employee(models.Model):
 #     # hr_employee/res_partner
