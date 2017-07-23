@@ -33,7 +33,7 @@ class CRMForm(ModelForm):
         #self.fields['street2'].required = False
     class Meta:
         model = CRM
-        exclude = ['crm_products','state', 'customer','erpid','shop']
+        exclude = ['crm_products','state','erpid','shop',] #'customer'
     # name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
     # email = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
     # street = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))

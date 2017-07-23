@@ -12,6 +12,9 @@ urlpatterns = [
     url(r'^crm/datatable/(?P<shop_id>[0-9]+)/$',views.CRMListJson.as_view(), name='crm_list_json'),
     url(r'^customer/(?P<customer_id>[0-9]+)/$', views.customer, name='customer_detail'),
     url(r'^customer/$', views.customer, name='customer_detail'),
+    # The crm history for a customer
+    url(r'^crm/datatable/(?P<cust>\w+)/(?P<customer_id>[0-9]+)/$', views.CRMListJson.as_view(),
+        name='customer_crm_list_json'),
     url(r'^crm/(?P<crm_id>[0-9]+)/$', views.crm, name='crm_detail'),
     url(r'^crm/$', views.crm, name='crm_detail'),
     # parameter is crm_id - filter to crm_product records for that crm

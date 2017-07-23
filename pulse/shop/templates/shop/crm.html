@@ -10,11 +10,28 @@
 
 
 <div class="row">
-  <div class="col-md-6">
 
+
+    {% if crm %}
+  <div class="col-md-6">
+  <h2>CRM Info</h2>
+      </div>
+
+
+
+      <div class="col-md-6">
+  <h2>CRM Actions</h2>
+
+
+
+  </div>
+
+
+      {% else %}
+      <div class="col-md-12">
       <h2>CRM Info</h2>
 
-      <form method="POST" action="">
+     <form method="POST" action="">
     {% csrf_token %}
 
     {% for field in form %}
@@ -31,16 +48,57 @@
 
 
 
-  <button type="submit" class="btn btn-default">Submit</button>
+  <!-- <button type="submit" class="btn btn-default">Edit CRM</button> -->
+</form>
+</div>
+
+
+
+{% endif %}
+
+
+
+</div>
+<div class="row">
+  <div class="col-md-12">
+
+
+
+      {% if crm.state == 'draft' or not crm %}
+       <h2>Edit Products</h2>
+
+      <!-- formset of the manytomany CRMProduct model - aka formset to add/remove product -->
+
+<form method="post" action="" class="form-inline">
+     {% csrf_token %}
+    {{rform.name.label_tag}}{{rform.name}}
+
+    <hr>
+    {{ formset.management_form }}
+    {% for form in formset %}
+   <div class="form-inline line-item">
+        {{ form.crm_product_id }}
+       {{ form.product_id }}
+            {{ form.product_display }}
+       {{ form.serial_number }}
+       <div class = 'qty-remaining'></div>
+             {{ form.qty }}
+        {{ form.amount }}
+         
+
+ {% if form.instance.pk %}{{ form.DELETE }}{% endif %}
+
+       <!-- <span class='glyphicon glyphicon-remove remove_item' aria-hidden='true'></span> -->
+        </div> <br>
+    {% endfor %}
+
+    <button type="submit" class="btn btn-primary" name="edit_crm_products">Edit Products</button>
+
 </form>
 
 
-  </div>
-  <div class="col-md-6">
-
-
-      {% if crm %}
-       <h2>CRM product</h2>
+ {% else %}
+       <h2>Products</h2>
 <table id="cptable" class="display" width="100%" cellspacing="0">
         <thead>
             <tr>
@@ -68,48 +126,8 @@
 
         </tbody>
     </table>
-      {% else %}
-      <!-- No crm, -->
+
       {% endif %}
-
-  </div>
-</div>
-<div class="row">
-  <div class="col-md-12">
-
-       <h2>Actions</h2>
-
-      <!-- formset of the manytomany CRMProduct model - aka formset to add/remove product -->
-
-<form method="post" action="" class="form-inline">
-     {% csrf_token %}
-    {{rform.name.label_tag}}{{rform.name}}
-
-    <hr>
-    {{ formset.management_form }}
-    {% for form in formset %}
-   <div class="form-inline line-item">
-        {{ form.crm_product_id }}
-       {{ form.product_id }}
-            {{ form.product_display }}
-       {{ form.serial_number }}
-       <div class = 'qty-remaining'></div>
-             {{ form.qty }}
-        {{ form.amount }}
-         
-
- {% if form.instance.pk %}{{ form.DELETE }}{% endif %}
-
-       <!-- <span class='glyphicon glyphicon-remove remove_item' aria-hidden='true'></span> -->
-        </div> <br>
-    {% endfor %}
-
-    <button type="submit" class="btn btn-primary" name="edit_crm_products">Submit</button>
-
-</form>
-
-
-
 
 
 

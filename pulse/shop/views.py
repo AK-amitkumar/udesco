@@ -35,7 +35,7 @@ def customer(request, customer_id=None):
     if customer_id:
         customer = Customer.objects.get(pk=customer_id)
         title = '%s'%(customer.erpid)
-        sub_title = '%s %s - state:'%(customer.first,customer.last)
+        sub_title = '%s'%(customer)
     else:
         customer = None
         title = 'Add New Customer'
@@ -100,8 +100,12 @@ def crm(request, crm_id=None):
         if form.is_valid():
             form.save()
             saved = form.save()
+        if 'action_confirm' in request.POST: #Confirm Sale - confirm the sale order
+            pass
+        elif 'create_invoices' in request.POST: #Create Invoices - create_invoices (when you install)
+            pass
         # the following should only happen for crm in draft state
-        if 'edit_crm_products' in request.POST:
+        if ('edit_crm_products' or 'action_confirm') in request.POST:
             if formset.is_valid():
                 non_deleted_crmp_ids = []
                 for form in formset.ordered_forms: #ordered_forms excludes 'DELETE' = True rows
@@ -219,11 +223,16 @@ class CRMListJson(BaseDatatableView):
     def filter_queryset(self, qs):
         # use parameters passed in GET request to filter queryset
 
-        #todo filter on shop
-        shop_id = self.kwargs.get('shop_id',None)
+
+        shop_id = self.kwargs.get('shop_id', None)
+        customer_id = self.kwargs.get('customer_id', None)
+        # simple example:
+
         if shop_id:
             #table of crm's product history
             qs = qs.filter(shop_id=shop_id)
+        elif customer_id:
+            qs = qs.filter(customer_id=customer_id)
         #qs = qs.filter(somehow filter on shop_id, what should be linked to a shop?
 
         # simple example:
@@ -260,15 +269,25 @@ class CRMListJson(BaseDatatableView):
     def prepare_results(self, qs):
         # prepare list with output column data
         # queryset is already paginated here
+        shop_id = self.kwargs.get('shop_id', None)
+        customer_id = self.kwargs.get('customer_id', None)
+        # simple example:
+
         json_data = []
         for item in qs:
-            json_data.append([
-                "<a href='/shop/crm/%s/'>%s</a>" % (item.id, item.erpid),
-                "<a href='/shop/customer/%s/'>%s</a>" % (item.customer.id,'{0} {1}'.format(item.customer.first, item.customer.last)),
-                item.customer.phone,
-                item.customer.email,
-                item.state,
-            ])
+            if customer_id:
+                json_data.append([
+                    "<a href='/shop/crm/%s/'>%s</a>" % (item.id, item.erpid),
+                    item.state,
+                ])
+            else: #if shop_id:
+                json_data.append([
+                    "<a href='/shop/crm/%s/'>%s</a>" % (item.id, item.erpid),
+                    "<a href='/shop/customer/%s/'>%s</a>" % (item.customer.id,'{0} {1}'.format(item.customer.first, item.customer.last)),
+                    item.customer.phone,
+                    item.customer.email,
+                    item.state,
+                ])
         return json_data
 
 

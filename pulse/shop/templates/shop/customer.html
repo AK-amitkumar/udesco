@@ -10,7 +10,7 @@
 
 
 <div class="row">
-  <div class="col-md-6">
+  <div class="col-md-12">
 
       <h2>Customer Info</h2>
 
@@ -36,16 +36,41 @@
 
 
   </div>
-  <div class="col-md-6">
 
-
-
-
-  </div>
 </div>
 <div class="row">
   <div class="col-md-12">
-       <h2>Actions</h2>
+
+
+
+       {% if customer_id %}
+       <h2>CRM History</h2>
+
+
+     <table id="crmtable" class="display" width="100%" cellspacing="0">
+        <thead>
+            <tr>
+
+                <!--<th>Product</th>-->
+                <th>UID</th>
+
+                <th>State</th>
+            </tr>
+        </thead>
+        <!--<tfoot>-->
+            <!--<tr>-->
+
+            <!--</tr>-->
+        <!--</tfoot>-->
+        <tbody>
+            <tr>
+
+            </tr>
+
+        </tbody>
+    </table>
+        {% endif %}
+
 
 
 
@@ -65,5 +90,11 @@
 
 
 {% block js %}
-
+    var oTable = $('#crmtable').dataTable({
+        // ...
+        "processing": true,
+        "serverSide": true,
+        "ajax": "{% url 'customer_crm_list_json' 'cust' customer_id %}"
+    });
+    // ...
 {% endblock %}

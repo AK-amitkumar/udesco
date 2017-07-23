@@ -86,7 +86,7 @@ class Customer(models.Model):
     email = models.EmailField(null=True, blank=True)
     phone = models.CharField(max_length=200, null=True, blank=True)
     def __unicode__(self):  # __str__ on Python 3
-        return self.erpid
+        return self.first+' '+self.last
 
     def save(self, *args, **kwargs):
         fields_dict = {}
@@ -140,7 +140,7 @@ class CRM(models.Model):
     crm_products = models.ManyToManyField('Product', through='CRMProduct', null=True, blank=True)
     payg = models.NullBooleanField(null=True, blank=True)  # is it a PAYG payment model - inherits from shop
     def __unicode__(self):  # __str__ on Python 3
-        return self.erpid
+        return str(self.erpid)
 
 
 
