@@ -47,6 +47,7 @@ SOCK_COMMON = xmlrpclib.ServerProxy('http://localhost:8069/xmlrpc/2/common')
 #AUTH
 def auth_erp(username = USERNAME, password = PASSWORD, db = DB, sock_common = SOCK_COMMON, sock_models=SOCK_MODELS):
     #sock_common = xmlrpclib.ServerProxy('http://localhost:8069/xmlrpc/2/common')
+    uid=None
     try:
         uid = sock_common.authenticate(db, username, password, {})
         if not uid:
@@ -245,7 +246,7 @@ def delete_erp(model,ids,update_dict,username = USERNAME, password = PASSWORD,
 
 #DO SOME ARBITRARY FUNCTION
 def function_erp(model,function,arg_list,username = USERNAME, password = PASSWORD,
-                    db = DB, uid = UID, sock_models = SOCK_MODELS,sock_common=SOCK_COMMON,raise_exception=True):
+                    db = DB, uid = UID, sock_models = SOCK_MODELS,sock_common=SOCK_COMMON,kwarg_dict=None):
     '''
 
     :param model: the ERP model you are looking for (str)
@@ -260,12 +261,13 @@ def function_erp(model,function,arg_list,username = USERNAME, password = PASSWOR
     :return: id of created record
     '''
     #ids = [ids] if isinstance(ids, (int, long)) else ids
+    kwarg_dict=kwarg_dict if kwarg_dict else {}
     if not uid:
         print 'reauth'
         uid = auth_erp(username = username, password = password, db = db, sock_common = sock_common)
     #sock_models = xmlrpclib.ServerProxy('http://localhost:8069/xmlrpc/2/object')
     sock_models.execute_kw(db, uid, password,
     model, function,
-    arg_list, {'raise_exception': raise_exception})
+    arg_list, kwarg_dict)
 
 

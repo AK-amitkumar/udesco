@@ -161,8 +161,10 @@ class CRM(models.Model):
         else:  # overwrite the save() method
             api.write_erp('sale.order', [self.erpid], fields_dict)
             super(CRM, self).save(*args, **kwargs)  # Call the "real" save() method.
-        if 'action_confirm' in kwargs:
+        if 1:#'action_confirm' in kwargs:
             api.function_erp('sale.order', 'action_confirm', [self.erpid])
+        if 2:#'create_invoices' in kwargs:
+            api.function_erp('sale.advance.payment.inv', 'create_invoices', [self.erpid], kwarg_dict = {'context':{'active_ids':[self.erpid]}})
 
 
 
