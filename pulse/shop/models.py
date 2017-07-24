@@ -141,6 +141,30 @@ class CRM(models.Model):
     payg = models.NullBooleanField(null=True, blank=True)  # is it a PAYG payment model - inherits from shop
     def __unicode__(self):  # __str__ on Python 3
         return str(self.erpid)
+    # def action_confirm(self):
+    def save(self, *args, **kwargs):
+        fields_dict = {}
+        # fields = api.inspect_erp('res.partner')
+        for field in self._meta.get_fields():
+            # do not write 'id' or foreign key fields to ERP
+            if not field.is_relation and field.name != 'id':
+                # cannot write None to the ERP fields
+                if getattr(self, field.name):
+                    fields_dict[field.name] = getattr(self, field.name)
+        if not self.pk:  # overwrite the create() method
+            fields_dict['partner_id'] = self.customer.erpid #the customer
+            erpid = api.create_erp('sale.order', fields_dict)
+            # don't save if no erpid is returned
+            if erpid:
+                self.erpid = erpid
+                super(CRM, self).save(*args, **kwargs)
+        else:  # overwrite the save() method
+            api.write_erp('sale.order', [self.erpid], fields_dict)
+            super(CRM, self).save(*args, **kwargs)  # Call the "real" save() method.
+        if 'action_confirm' in kwargs:
+            api.function_erp('sale.order', 'action_confirm', [self.erpid])
+
+
 
 
 

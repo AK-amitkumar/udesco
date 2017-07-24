@@ -29,19 +29,10 @@ class CRMForm(ModelForm):
         for field in self.visible_fields():
             if field.field.widget.input_type in ['text','email']:
                 field.field.widget.attrs['class'] = 'form-control'
-        # SET required = False to overwrite the form-control, which sets it to True
-        #self.fields['street2'].required = False
+        self.fields['customer'].required = False
     class Meta:
         model = CRM
         exclude = ['crm_products','state','erpid','shop',] #'customer'
-    # name = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
-    # email = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
-    # street = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
-    # street2 = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
-    # city = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
-    # zip = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
-    # #country = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
-    # phone = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
 
 
 '''

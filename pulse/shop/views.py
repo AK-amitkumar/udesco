@@ -99,7 +99,7 @@ def crm(request, crm_id=None):
         # check whether it's valid:
         if form.is_valid():
             form.save()
-            saved = form.save()
+            crm = form.save()
         if 'action_confirm' in request.POST: #Confirm Sale - confirm the sale order
             pass
         elif 'create_invoices' in request.POST: #Create Invoices - create_invoices (when you install)
@@ -116,16 +116,16 @@ def crm(request, crm_id=None):
                     if cd.get('crm_product_id'):
                         crmp = CRMProduct.objects.get(id = cd['crm_product_id'])
                         #DO not run .update(), because signals will not run
-                        save_crmp_form_fields_to_model(cd, saved, object=crmp)
+                        save_crmp_form_fields_to_model(cd, crm, object=crmp)
                         non_deleted_crmp_ids.append(cd.get('crm_product_id'))
                     else:#if not cd.get('DELETE'):
-                        cr_id = save_crmp_form_fields_to_model(cd, saved)
+                        cr_id = save_crmp_form_fields_to_model(cd, crm)
                         non_deleted_crmp_ids.append(cr_id)
                     #delete the ones marked as DELETE
-                delete_products = CRMProduct.objects.filter(crm=saved).exclude(id__in=non_deleted_crmp_ids)
+                delete_products = CRMProduct.objects.filter(crm=crm).exclude(id__in=non_deleted_crmp_ids)
                 for p in delete_products:
                     p.delete()
-            return HttpResponseRedirect(reverse('crm_detail', args=[saved.id]))
+        return HttpResponseRedirect(reverse('crm_detail', args=[crm.id]))
 
     # if a GET (or any other method) we'll create a blank form
     else:

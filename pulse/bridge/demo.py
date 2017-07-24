@@ -99,7 +99,7 @@ def make_customers(country,shop, comp):
                             email=fake.email(), phone = fake.phone_number(),country=country,
                             street=fake.street_address(),#street2=fake.email(),
                             zip=fake.zipcode(),city=fake.city())
-            CRM.objects.get_or_create(erpid=cust.erpid,customer=cust,shop=shop)
+            CRM.objects.get_or_create(erpid=erpid,customer=cust,shop=shop)
         except Exception as e:
             print e
     return None

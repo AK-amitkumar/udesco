@@ -243,7 +243,29 @@ def delete_erp(model,ids,update_dict,username = USERNAME, password = PASSWORD,
     sock_models.execute_kw(db, uid, password, model, 'unlink', [ids])
 
 
+#DO SOME ARBITRARY FUNCTION
+def function_erp(model,function,arg_list,username = USERNAME, password = PASSWORD,
+                    db = DB, uid = UID, sock_models = SOCK_MODELS,sock_common=SOCK_COMMON,raise_exception=True):
+    '''
 
-
+    :param model: the ERP model you are looking for (str)
+    :param search_list_of_tuples: [('field1','op',value1),('field1','op',value1),('field1','op',value1)]
+    :param fields:  list of fields to return
+    :param username:
+    :param password:
+    :param db:
+    :param uid:
+    :param sock_models:
+    :param limit:
+    :return: id of created record
+    '''
+    #ids = [ids] if isinstance(ids, (int, long)) else ids
+    if not uid:
+        print 'reauth'
+        uid = auth_erp(username = username, password = password, db = db, sock_common = sock_common)
+    #sock_models = xmlrpclib.ServerProxy('http://localhost:8069/xmlrpc/2/object')
+    sock_models.execute_kw(db, uid, password,
+    model, function,
+    arg_list, {'raise_exception': raise_exception})
 
 
