@@ -144,7 +144,6 @@ class CRM(models.Model):
     # def action_confirm(self):
     def save(self, *args, **kwargs):
         fields_dict = {}
-        # fields = api.inspect_erp('res.partner')
         for field in self._meta.get_fields():
             # do not write 'id' or foreign key fields to ERP
             if not field.is_relation and field.name != 'id':
@@ -161,10 +160,14 @@ class CRM(models.Model):
         else:  # overwrite the save() method
             api.write_erp('sale.order', [self.erpid], fields_dict)
             super(CRM, self).save(*args, **kwargs)  # Call the "real" save() method.
-        if 1:#'action_confirm' in kwargs:
-            api.function_erp('sale.order', 'action_confirm', [self.erpid])
-        if 2:#'create_invoices' in kwargs:
-            api.function_erp('sale.advance.payment.inv', 'create_invoices', [self.erpid], kwarg_dict = {'context':{'active_ids':[self.erpid]}})
+    # todo SAVE the CRMProduct - should be a  sale.order.line (sale_order.order_line)
+    def action_confirm(self):
+        api.function_erp('sale.order', 'action_confirm', [self.erpid])
+    def action_invoice_create(self):#'action_invoice_create' in kwargs:
+        #api.function_erp('sale.advance.payment.inv', 'create_invoices', [self.erpid], kwarg_dict = {'context':{'active_ids':[self.erpid]}})
+        #NOTE self.erpid = sale_order_id
+        #sale_order_to_invoice_data = [self.erpid, {'context': {'active_ids': self.erpid}}]
+        api.function_erp('sale.order', 'action_invoice_create', [self.erpid], kwarg_dict = {'context':{'active_ids':[self.erpid]}})
 
 
 
@@ -270,12 +273,34 @@ class CRMProduct(models.Model):
         return [(self.id, self.product.name),]#{'id': self.id, 'label': self.product.name, 'value': self.product.name}
 
     def save(self, *args, **kwargs):
+        fields_dict = {}
+        for field in self._meta.get_fields():
+            # do not write 'id' or foreign key fields to ERP
+            if not field.is_relation and field.name != 'id':
+                # cannot write None to the ERP fields
+                if getattr(self, field.name):
+                    fields_dict[field.name] = getattr(self, field.name)
         if not self.pk:  # overwrite the create() method
             print 'CRMP created'
-            super(CRMProduct, self).save(*args, **kwargs)
+            fields_dict['order_id'] = self.crm.erpid  # the customer
+            #todo - going to need a lot more fields
+            erpid = api.create_erp('sale.order.line', fields_dict)
+            # don't save if no erpid is returned
+            if erpid:
+                self.erpid = erpid
+                super(CRMProduct, self).save(*args, **kwargs)
         else:  # overwrite the save() method
             print 'CRMP saved'
-            super(CRMProduct, self).save(*args, **kwargs)  #
+            api.write_erp('sale.order.line', [self.erpid], fields_dict)
+            super(CRMProduct, self).save(*args, **kwargs)  # Call the "real" save() method.
+
+
+
+
+
+
+
+
 
 # class Employee(models.Model):
 #     # hr_employee/res_partner

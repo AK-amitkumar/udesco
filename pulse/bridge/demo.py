@@ -126,7 +126,8 @@ def get_products():
         vals = api.search_read_erp('product.template', [('type','in',['consu','product'])], ['name', 'default_code', 'list_price','type' ])
         for v in vals:
             #print v
-            prod, c = Product.objects.get_or_create(erpid=v['id'],name=v['name'],
+            #erpid=v['id'] set in save method
+            prod, c = Product.objects.get_or_create(name=v['name'],
                                                     default_code=v['default_code'],list_price=v['list_price']
                                                     ,type=v['type'])
     return None
