@@ -196,6 +196,45 @@ def create_erp(model,create_dict,username = USERNAME, password = PASSWORD,
 
     return created_id
 
+#CREATE
+def get_or_create_erp(model,create_dict,username = USERNAME, password = PASSWORD,
+                    db = DB, uid = UID, sock_models = SOCK_MODELS,sock_common=SOCK_COMMON):
+    '''
+
+    :param model: the ERP model you are looking for (str)
+    :param search_list_of_tuples: [('field1','op',value1),('field1','op',value1),('field1','op',value1)]
+    :param fields:  list of fields to return
+    :param username:
+    :param password:
+    :param db:
+    :param uid:
+    :param sock_models:
+    :param limit:
+    :return: id of created record
+    '''
+    if not uid:
+        print 'reauth'
+        uid = auth_erp(username = username, password = password, db = db, sock_common = sock_common)
+    #Following is from the search function
+    try:
+        ids = sock_models.execute_kw(db, uid, password,
+            model, 'search',
+            [[(k,'=', v) for k, v in create_dict.iteritems()]], #.items()turns the dictionary into a list of tuples
+            #{'offset': 10, 'limit': 5}
+            )
+    except Exception as e:
+        print e
+        if "Fault 2: 'None'" in str(e):
+            got_or_created_id = sock_models.execute_kw(db, uid, password, model, 'create', [create_dict])
+            return got_or_created_id
+        else:
+            raise
+    if ids:
+        got_or_created_id = ids[0]
+    else:
+        got_or_created_id = sock_models.execute_kw(db, uid, password, model, 'create', [create_dict])
+    return got_or_created_id
+
 
 #UPDATE RECORD
 def write_erp(model,ids,update_dict,username = USERNAME, password = PASSWORD,
@@ -221,7 +260,7 @@ def write_erp(model,ids,update_dict,username = USERNAME, password = PASSWORD,
     sock_models.execute_kw(db, uid, password, model, 'write', [ids, update_dict])
 
 #DELETE RECORD
-def delete_erp(model,ids,update_dict,username = USERNAME, password = PASSWORD,
+def delete_erp(model,ids,username = USERNAME, password = PASSWORD,
                     db = DB, uid = UID, sock_models = SOCK_MODELS,sock_common=SOCK_COMMON):
     '''
 
@@ -266,8 +305,9 @@ def function_erp(model,function,arg_list,username = USERNAME, password = PASSWOR
         print 'reauth'
         uid = auth_erp(username = username, password = password, db = db, sock_common = sock_common)
     #sock_models = xmlrpclib.ServerProxy('http://localhost:8069/xmlrpc/2/object')
-    sock_models.execute_kw(db, uid, password,
+    ret = sock_models.execute_kw(db, uid, password,
     model, function,
     arg_list, kwarg_dict)
+    return ret
 
 

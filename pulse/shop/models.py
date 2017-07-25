@@ -134,6 +134,7 @@ class CRM(models.Model):
     # res_partner of crm = True  // alternative is supplier = True
     # creation of crm chould only happen on creation of crm products - and this should generate sale order
     erpid = models.IntegerField(null=True, blank=True) #Unique CRM Id
+    invoice_erpid = models.IntegerField(null=True, blank=True) #Unique CRM Id
     shop = models.ForeignKey('Shop') # linked through the invoice, not the shop
     customer = models.ForeignKey('Customer')
     state = models.CharField(max_length=200, choices = PAYMENT_STATE, default = 'draft')
@@ -159,16 +160,33 @@ class CRM(models.Model):
                 super(CRM, self).save(*args, **kwargs)
         else:  # overwrite the save() method
             api.write_erp('sale.order', [self.erpid], fields_dict)
+            if 'invoice_erpid' in kwargs:
+                self.invoice_erpid = kwargs['invoice_erpid']
+                kwargs.pop('invoice_erpid')
             super(CRM, self).save(*args, **kwargs)  # Call the "real" save() method.
-    # todo SAVE the CRMProduct - should be a  sale.order.line (sale_order.order_line)
-    def action_confirm(self):
+
+
+    def action_confirm(self, *args, **kwargs):
         api.function_erp('sale.order', 'action_confirm', [self.erpid])
-    def action_invoice_create(self):#'action_invoice_create' in kwargs:
+
+
+    def action_invoice_create(self, *args, **kwargs):#'action_invoice_create' in kwargs:
         #api.function_erp('sale.advance.payment.inv', 'create_invoices', [self.erpid], kwarg_dict = {'context':{'active_ids':[self.erpid]}})
         #NOTE self.erpid = sale_order_id
         #sale_order_to_invoice_data = [self.erpid, {'context': {'active_ids': self.erpid}}]
-        api.function_erp('sale.order', 'action_invoice_create', [self.erpid], kwarg_dict = {'context':{'active_ids':[self.erpid]}})
+        invoice_ids = api.function_erp('sale.order', 'action_invoice_create', [self.erpid], kwarg_dict = {'context':{'active_ids':[self.erpid]}})
+        if invoice_ids:
+            #self.invoice_erpid = invoice_ids[0]
+            self.save(invoice_erpid=invoice_ids[0])
+            #kwargs['invoice_id']=invoice_ids[0]
+            #super(CRM, self).save(*args, **kwargs)
 
+
+    def action_invoice_open(self):#'action_invoice_create' in kwargs:
+        #api.function_erp('sale.advance.payment.inv', 'create_invoices', [self.erpid], kwarg_dict = {'context':{'active_ids':[self.erpid]}})
+        #NOTE self.erpid = sale_order_id
+        #sale_order_to_invoice_data = [self.erpid, {'context': {'active_ids': self.erpid}}]
+        api.function_erp('account.invoice', 'action_invoice_open', [self.invoice_erpid], kwarg_dict = {'context':{'active_ids':[self.invoice_erpid]}})
 
 
 
@@ -187,11 +205,12 @@ class Product(models.Model):
     # procuct_template - product_product has a fk to this - this is where most of the product info is
 
     # so what should happen is this model should be more like a product_template
-    erpid = models.IntegerField(null=True, blank=True)
+    product_erpid = models.IntegerField(null=True, blank=True) #product_product
+    template_erpid = models.IntegerField(null=True, blank=True) #product_template
     name = models.CharField(max_length=200)
     default_code = models.CharField(max_length=200)# not unique in ERP, use erpid for identification
     list_price = models.FloatField(default=0)
-    type = models.CharField(max_length=200, choices=PRODUCT_TYPE,null=True,blank=True)
+    type = models.CharField(max_length=200, choices=PRODUCT_TYPE,null=True,blank=True)  #product_template
     def __unicode__(self):  # __str__ on Python 3
         return self.default_code
     def save(self, *args, **kwargs):
@@ -203,15 +222,19 @@ class Product(models.Model):
                 # cannot write None to the ERP fields
                 if getattr(self, field.name):
                     fields_dict[field.name] = getattr(self, field.name)
-        fields_dict['name'] = fields_dict.get('name', '') + ' ' + fields_dict.get('last', '')
         if not self.pk:  # overwrite the create() method
-            erpid = api.create_erp('product.template', fields_dict)
+            template_erpid = api.get_or_create_erp('product.template', fields_dict)
             # don't save if no erpid is returned
-            if erpid:
-                self.erpid = erpid
-                super(Product, self).save(*args, **kwargs)
+            if template_erpid:
+                fields_dict['product_tmpl_id'] = template_erpid
+                self.template_erpid = template_erpid
+                product_erpid = api.get_or_create_erp('product.product', fields_dict['default_code'])
+                if product_erpid:
+                    self.product_erpid = product_erpid
+                    super(Product, self).save(*args, **kwargs)
         else:  # overwrite the save() method
-            api.write_erp('product.template', [self.erpid], fields_dict)
+            api.write_erp('product.template', [self.template_erpid], fields_dict)
+            api.write_erp('product.product', [self.product_erpid], fields_dict)
             super(Product, self).save(*args, **kwargs)  # Call the "real" save() method.
 
     def get_qty_remaining(self,*args,**kwargs):
@@ -269,6 +292,11 @@ class CRMProduct(models.Model):
         self.crm=None
         self.save() #do i need to super or something?
 
+
+    def delete(self, *args, **kwargs):
+        api.delete_erp('sale.order.line',self.erpid)
+        super(CRMProduct, self).delete(*args, **kwargs)
+
     def return_product_choices(self):
         #((k, k) for k in choices_list)
         return [(self.id, self.product.name),]#{'id': self.id, 'label': self.product.name, 'value': self.product.name}
@@ -284,7 +312,7 @@ class CRMProduct(models.Model):
                 fields_dict['product_uom_qty'] = self.qty if self.qty else 1
                 #fields_dict['price_unit'] = self.price_unit
                 fields_dict['order_id'] = self.crm.erpid
-                fields_dict['product_id'] = self.product.erpid
+                fields_dict['product_id'] = self.product.product_erpid
                 #todo self.product.erpid is the id of the product_template, BUT 'product_id' is a link to product.product model
         if not self.pk:  # overwrite the create() method
             print 'CRMP created'
