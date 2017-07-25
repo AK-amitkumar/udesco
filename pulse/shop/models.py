@@ -281,7 +281,7 @@ class CRMProduct(models.Model):
                 # cannot write None to the ERP fields
                 if getattr(self, field.name):
                     fields_dict[field.name] = getattr(self, field.name)
-                fields_dict['product_uom_qty'] = self.qty
+                fields_dict['product_uom_qty'] = self.qty if self.qty else 1
                 #fields_dict['price_unit'] = self.price_unit
                 fields_dict['order_id'] = self.crm.erpid
                 fields_dict['product_id'] = self.product.erpid
