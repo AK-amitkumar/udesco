@@ -285,9 +285,9 @@ class CRMProduct(models.Model):
                 #fields_dict['price_unit'] = self.price_unit
                 fields_dict['order_id'] = self.crm.erpid
                 fields_dict['product_id'] = self.product.erpid
+                #todo self.product.erpid is the id of the product_template, BUT 'product_id' is a link to product.product model
         if not self.pk:  # overwrite the create() method
             print 'CRMP created'
-            #todo - going to need a lot more fields
             erpid = api.create_erp('sale.order.line', fields_dict)
             # don't save if no erpid is returned
             if erpid:

@@ -120,6 +120,7 @@ def crm(request, crm_id=None):
                 delete_products = CRMProduct.objects.filter(crm=crm).exclude(id__in=non_deleted_crmp_ids)
                 for p in delete_products:
                     p.delete()
+                    #todo call api unlink on the sale_order_id
         if 'action_confirm' in request.POST:  # Confirm Sale - confirm the sale order
             crm.action_confirm()
         elif 'action_invoice_create' in request.POST:  # Create Invoices - create_invoices (when you install)
