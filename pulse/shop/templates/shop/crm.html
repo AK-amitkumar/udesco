@@ -11,6 +11,8 @@
 
 <div class="row">
 
+ <form method="post" action="" class="form-inline">
+     {% csrf_token %}
 
     {% if crm %}
   <div class="col-md-6">
@@ -21,13 +23,14 @@
 
       <div class="col-md-6">
   <h2>CRM Actions</h2>
-                    <button type="button" class="btn btn-default btn-lg">
-  <span class="glyphicon glyphicon-star" aria-hidden="true" type = 'submit' name="action_confirm"></span>Confirm Sale Order
+                    <button class="btn btn-default btn-lg" type = 'submit' name="action_confirm">
+  <span class="glyphicon glyphicon-star" aria-hidden="true"></span>Confirm Sale Order
 </button>
 
+
       <!-- should change active to False -->
-                          <button type="button" class="btn btn-default btn-lg">
-  <span class="glyphicon glyphicon-star" aria-hidden="true" type = 'submit' name="action_invoice_create"></span> Create Invoice
+                          <button class="btn btn-default btn-lg" type = 'submit' name="action_invoice_create">
+  <span class="glyphicon glyphicon-star" aria-hidden="true"></span> Create Invoice
 </button>
 
 
@@ -39,8 +42,6 @@
       <div class="col-md-12">
       <h2>CRM Info</h2>
 
-     <form method="POST" action="">
-    {% csrf_token %}
 
     {% for field in form %}
     <div class="form-group">
@@ -57,7 +58,7 @@
 
 
   <!-- <button type="submit" class="btn btn-default">Edit CRM</button> -->
-</form>
+
 </div>
 
 
@@ -77,8 +78,7 @@
 
       <!-- formset of the manytomany CRMProduct model - aka formset to add/remove product -->
 
-<form method="post" action="" class="form-inline">
-     {% csrf_token %}
+
     {{rform.name.label_tag}}{{rform.name}}
 
     <hr>
@@ -102,7 +102,7 @@
 
     <button type="submit" class="btn btn-primary" name="edit_crm_products">Edit Products</button>
 
-</form>
+
 
 
  {% else %}
@@ -137,7 +137,7 @@
 
       {% endif %}
 
-
+</form>
 
   </div>
 </div>

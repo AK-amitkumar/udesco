@@ -98,10 +98,9 @@ def crm(request, crm_id=None):
         formset = CRMPFormset(request.POST, request.FILES)
         # check whether it's valid:
         if form.is_valid():
-            form.save()
             crm = form.save()
         # the following should only happen for crm in draft state
-        if ('edit_crm_products' or 'action_confirm') in request.POST:
+        if 'edit_crm_products' in request.POST or 'action_confirm' in request.POST:
             if formset.is_valid():
                 non_deleted_crmp_ids = []
                 for form in formset.ordered_forms: #ordered_forms excludes 'DELETE' = True rows
@@ -121,10 +120,10 @@ def crm(request, crm_id=None):
                 delete_products = CRMProduct.objects.filter(crm=crm).exclude(id__in=non_deleted_crmp_ids)
                 for p in delete_products:
                     p.delete()
-            if 'action_confirm' in request.POST:  # Confirm Sale - confirm the sale order
-                crm.action_confirm()
-            elif 'action_invoice_create' in request.POST:  # Create Invoices - create_invoices (when you install)
-                crm.action_invoice_create()
+        if 'action_confirm' in request.POST:  # Confirm Sale - confirm the sale order
+            crm.action_confirm()
+        elif 'action_invoice_create' in request.POST:  # Create Invoices - create_invoices (when you install)
+            crm.action_invoice_create()
         return HttpResponseRedirect(reverse('crm_detail', args=[crm.id]))
 
     # if a GET (or any other method) we'll create a blank form

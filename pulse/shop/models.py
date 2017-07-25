@@ -240,6 +240,7 @@ class CRMProduct(models.Model):
     
     '''
     # each line here should roll up to an sale_order_line - not account_invoice_line
+    erpid = models.IntegerField(null=True, blank=True)
     product = models.ForeignKey('Product', on_delete=models.CASCADE) #corresponds to product_product
     crm = models.ForeignKey('CRM', on_delete=models.CASCADE, null=True, blank=True)
     #account_id - income or expense account
@@ -280,9 +281,12 @@ class CRMProduct(models.Model):
                 # cannot write None to the ERP fields
                 if getattr(self, field.name):
                     fields_dict[field.name] = getattr(self, field.name)
+                fields_dict['product_uom_qty'] = self.qty
+                #fields_dict['price_unit'] = self.price_unit
+                fields_dict['order_id'] = self.crm.erpid
+                fields_dict['product_id'] = self.product.erpid
         if not self.pk:  # overwrite the create() method
             print 'CRMP created'
-            fields_dict['order_id'] = self.crm.erpid  # the customer
             #todo - going to need a lot more fields
             erpid = api.create_erp('sale.order.line', fields_dict)
             # don't save if no erpid is returned

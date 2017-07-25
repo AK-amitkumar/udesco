@@ -24,15 +24,27 @@ class CustomerForm(ModelForm):
 # Create the form class.
 class CRMForm(ModelForm):
     def __init__(self, *args, **kwargs):
+        #self.instance = kwargs.pop('instance', None)
+
+
         # SET 'form-control' class on text fields to make them bootstrap style
         super(CRMForm, self).__init__(*args, **kwargs)
         for field in self.visible_fields():
             if field.field.widget.input_type in ['text','email']:
                 field.field.widget.attrs['class'] = 'form-control'
-        self.fields['customer'].required = False
+        #self.fields['customer'].required = False
+        #self.fields['shop'].required = False
+
+        # if self.instance.pk:
+        #     self.initial['customer'] = self.instance.customer
+        #     self.initial['shop'] = self.instance.shop
+        #     self.initial['erpid'] = self.instance.erpid
+        #     self.initial['state'] = self.instance.state
+
+
     class Meta:
         model = CRM
-        exclude = ['crm_products','state','erpid','shop',] #'customer'
+        exclude = ['crm_products','state','erpid',] #'shop','customer'
 
 
 '''
