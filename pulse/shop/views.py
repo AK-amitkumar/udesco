@@ -121,8 +121,9 @@ def crm(request, crm_id=None):
                 for p in delete_products:
                     p.delete()
                     #todo call api unlink on the sale_order_id
-        if 'action_confirm' in request.POST:  # Confirm Sale - confirm the sale order
-            crm.action_confirm()
+        # if 'action_confirm' in request.POST:  # Confirm Sale - confirm the sale order
+        #     crm.action_confirm()
+        #action_confirm now called in action_invoice_create
         elif 'action_invoice_create' in request.POST:  # Create Invoices - create_invoices (when you install)
             crm.action_invoice_create()
         elif 'action_invoice_open' in request.POST:  # Create Invoices - create_invoices (when you install)

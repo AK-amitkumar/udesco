@@ -124,7 +124,8 @@ def get_products():
         #         create_dict['type'] = 'service'
         #     prod, c = Product.objects.get_or_create(**create_dict)
     else: #ELSE READ data from ERP and get_or_create
-        vals = api.search_read_erp('product.template', [('type','in',['consu','product'])], ['name', 'default_code', 'list_price','type' ])
+        # If the product's invoice policy is deliver, then you cannot invoice the quotation (not until delivery) - for demo I want to invoice on order
+        vals = api.search_read_erp('product.template', [('invoice_policy','=','order'),('type','in',['consu','product'])], ['name', 'default_code', 'list_price','type' ])
         for v in vals:
             #print v
             #erpid=v['id'] set in save method

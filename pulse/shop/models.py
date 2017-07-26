@@ -127,8 +127,18 @@ class Supplier(models.Model):
 
 
 
+#draft - sale.order created in state 'draft' (Quotation)
 
-PAYMENT_STATE = (('draft','Draft'),('downpay','Downpay'),('late','Late'),('normal','Normal'),('defaulted','Defaulted'),('repo','Repossessed'))
+#todo maybe combine next two actions?
+#downpay - sale.order confirmed - in state 'sale'
+#downpay - account.invoice created with action action_invoice_create - invoice in state 'draft'
+
+#normal - account.invoice opened with action action_invoice_open - invoice in state 'open'
+#paid - account.invoice paid with action ----- - invoice in state 'paid'
+
+
+PAYMENT_STATE = (('draft','Draft'),('downpay','Downpay'),('late','Late'),
+                 ('normal','Normal'),('defaulted','Defaulted'),('repo','Repossessed'),('paid','Paid'))
 
 class CRM(models.Model):
     # res_partner of crm = True  // alternative is supplier = True
@@ -159,35 +169,31 @@ class CRM(models.Model):
                 self.erpid = erpid
                 super(CRM, self).save(*args, **kwargs)
         else:  # overwrite the save() method
-            api.write_erp('sale.order', [self.erpid], fields_dict)
+            if not kwargs:#'invoice_erpid' not in kwargs and 'state' not in kwargs:
+                api.write_erp('sale.order', [self.erpid], fields_dict)
             if 'invoice_erpid' in kwargs:
                 self.invoice_erpid = kwargs['invoice_erpid']
                 kwargs.pop('invoice_erpid')
+            if 'state' in kwargs:
+                self.state = kwargs['state']
+                kwargs.pop('state')
             super(CRM, self).save(*args, **kwargs)  # Call the "real" save() method.
 
 
-    def action_confirm(self, *args, **kwargs):
-        api.function_erp('sale.order', 'action_confirm', [self.erpid])
+    # def action_confirm(self, *args, **kwargs):
+    #     api.function_erp('sale.order', 'action_confirm', [self.erpid])
 
 
     def action_invoice_create(self, *args, **kwargs):#'action_invoice_create' in kwargs:
-        #api.function_erp('sale.advance.payment.inv', 'create_invoices', [self.erpid], kwarg_dict = {'context':{'active_ids':[self.erpid]}})
-        #NOTE self.erpid = sale_order_id
-        #sale_order_to_invoice_data = [self.erpid, {'context': {'active_ids': self.erpid}}]
+        api.function_erp('sale.order', 'action_confirm', [self.erpid])
         invoice_ids = api.function_erp('sale.order', 'action_invoice_create', [self.erpid], kwarg_dict = {'context':{'active_ids':[self.erpid]}})
         if invoice_ids:
-            #self.invoice_erpid = invoice_ids[0]
-            self.save(invoice_erpid=invoice_ids[0])
-            #kwargs['invoice_id']=invoice_ids[0]
-            #super(CRM, self).save(*args, **kwargs)
+            self.save(invoice_erpid=invoice_ids[0],state='downpay')
 
 
     def action_invoice_open(self):#'action_invoice_create' in kwargs:
-        #api.function_erp('sale.advance.payment.inv', 'create_invoices', [self.erpid], kwarg_dict = {'context':{'active_ids':[self.erpid]}})
-        #NOTE self.erpid = sale_order_id
-        #sale_order_to_invoice_data = [self.erpid, {'context': {'active_ids': self.erpid}}]
         api.function_erp('account.invoice', 'action_invoice_open', [self.invoice_erpid], kwarg_dict = {'context':{'active_ids':[self.invoice_erpid]}})
-
+        self.save(state='normal')
 
 
 
@@ -228,7 +234,7 @@ class Product(models.Model):
             if template_erpid:
                 fields_dict['product_tmpl_id'] = template_erpid
                 self.template_erpid = template_erpid
-                product_erpid = api.get_or_create_erp('product.product', fields_dict['default_code'])
+                product_erpid = api.get_or_create_erp('product.product', fields_dict)
                 if product_erpid:
                     self.product_erpid = product_erpid
                     super(Product, self).save(*args, **kwargs)
