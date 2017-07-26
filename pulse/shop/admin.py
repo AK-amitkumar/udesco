@@ -6,5 +6,5 @@ from django.contrib import admin
 # Register your models here.
 from .models import *
 
-admin.site.register([Shop,Company, Country, CRM, Product,
+admin.site.register([Shop,Company,Customer, Country, CRM, Product,
                      CRMProduct])
