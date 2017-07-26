@@ -52,9 +52,33 @@ class MMProvider(models.Model):
 
 class MMPayment(models.Model):
     # res_company/res_partner  in ERP
+    erpid = models.IntegerField(null=True, blank=True)  # payment id (payment towards invoice)
     crm = models.ForeignKey(CRM)
     provider = models.ForeignKey(MMProvider)
     post = JSONField(name='Mobile money post')
     response = models.CharField(max_length=200)
     def __unicode__(self):              # __str__ on Python 3
         return self.crm.id
+
+    def save(self, *args, **kwargs):
+        fields_dict = {}
+        for field in self._meta.get_fields():
+            # do not write 'id' or foreign key fields to ERP
+            if not field.is_relation and field.name != 'id':
+                # cannot write None to the ERP fields
+                if getattr(self, field.name):
+                    fields_dict[field.name] = getattr(self, field.name)
+                #todo - how the hell do i create payment and apply to invoice???
+                # fields_dict['order_id'] = self.crm.erpid
+                # fields_dict['product_id'] = self.product.product_erpid
+        if not self.pk:  # overwrite the create() method
+            print 'MM Payment created'
+            erpid = api.create_erp('sale.order.line', fields_dict)
+            # don't save if no erpid is returned
+            if erpid:
+                self.erpid = erpid
+                super(MMPayment, self).save(*args, **kwargs)
+        else:  # overwrite the save() method
+            print 'MM Payment saved'
+            api.write_erp('sale.order.line', [self.erpid], fields_dict)
+            super(MMPayment, self).save(*args, **kwargs)  # Call the "real" save() method.

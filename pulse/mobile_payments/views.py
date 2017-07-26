@@ -11,6 +11,13 @@ from .forms import *
 
 
 from .models import *
+from shop.models import *
+
+import hmac
+import urllib
+
+import logging
+log = logging.getLogger(__name__)
 
 from django.views.decorators.csrf import csrf_exempt
 from django.forms.models import modelformset_factory, formset_factory,inlineformset_factory
@@ -28,6 +35,95 @@ def payment(request,payment_id):
     context = {'payment':payment}
     return render(request, 'mobile_payments/payment.html', context)
 
+
+def payment_post(request):
+    '''
+    request.post looks like...
+{
+"account_number":"N/A",
+"amount":"500.0",
+"business_number":"854245",
+"currency":"Ksh",
+"first_name":"JANES",
+"internal_transaction_id":"5732369",
+"last_name":"ONDIEK",
+"middle_name":"",
+"password":"d0Mi7ANGCv6D",
+"sender_phone":"+254716050963",
+"service_name":"M-PESA",
+"signature":"5mlRQXOA9db8/kpzRF6PeQpch9A=",
+"transaction_reference":"LGI2LU3VKW",
+"transaction_timestamp":"2017-07-18T12:04:55Z",
+"transaction_type":"buygoods",
+"username":"bboxx"
+}
+
+key is...
+
+5aaa3b74cbe45ddcbfe5badec141b380bf63a444
+
+    :param request:
+    :param payment_id:
+    :return:
+    '''
+    #post comes in
+
+    if request.method == 'POST':
+        post_body = request.json()
+        #get mobile money provider AND from that get key to hash against
+        provider = MMProvider.objects.get(username=post_body.get('username'),password=post_body.get('password'))
+        #match post to a customer with phone number
+        key = provider.key
+        if ValidateSignature(post_body,key):
+            crms = CRM.objects.filter(customer__phone = post_body['sender_phone'])
+            if len(crms)==1 and crms[0].state in ['normal','late','downpay']:
+                #create the payment
+                #the save method on this should do an erp payment creation - and return erpid
+                MMPayment.objects.get_or_create(crm=crms[0],provider=provider,post=post_body,reponse='good')
+            elif len(crms)==0:
+                log.error('No CRMs found with this phone number')
+            elif len(crms)>=0:
+                log.error('More than one CRM found with this phone number')
+
+        
+
+    return True
+
+
+def ValidateSignature(post_body,key):
+    # base string is the post parameters soreted in ascending order
+
+    # To learn more see https://app.kopokopo.com/push_api
+    # set up base string
+    try:
+        bs = {'account_number': post_body['account_number'], 'amount': post_body['amount'], 'business_number': post_body['business_number'],
+              'currency': post_body['currency'],
+              'first_name': post_body['first_name'], 'internal_transaction_id': post_body['internal_transaction_id'],
+              'last_name': post_body['last_name'], 'middle_name': post_body['middle_name'],
+              'sender_phone': post_body['sender_phone'], 'service_name': post_body['service_name'],
+              'transaction_reference': post_body['transaction_reference'],
+              'transaction_timestamp': post_body['transaction_timestamp'],
+              'transaction_type': post_body['transaction_type']}
+        base_string = "&".join([k + '=' + urllib.quote_plus(str(bs[k])) for k in sorted(bs)])
+    except Exception as e:
+        log.error('error hash')
+        return True
+
+    try:
+        hashed = hmac.new(key, base_string, sha1)
+    except Exception as e:
+        print 'error hash'
+    sSignature = hashed.digest().encode("base64").rstrip('\n')
+
+    # print sSignature + ' = ' + self.signature
+    log.error(sSignature + ' = ' + post_body['signature'])
+    # print 'base string: ' + base_string
+    log.error('base string: ' + base_string)
+    # print sSignature == self.signature
+    if sSignature == post_body['signature']:
+        return True
+
+    return True
 
 from django_datatables_view.base_datatable_view import BaseDatatableView
 
