@@ -1,0 +1,72 @@
+
+{% extends 'base.html' %} <!-- not app-specific base -->
+
+
+
+{% block content %}
+
+
+ <div class="page-header">   <h1>Payments</h1> </div>
+
+
+<div class="row">
+
+  <div class="col-md-12">
+
+
+
+<table id="paytable" class="display" width="100%" cellspacing="0">
+        <thead>
+            <tr>
+
+                <th>Payment</th>
+                <!--<th>CRM</th>-->
+                <th>CRM</th>
+                <th>Provider</th>
+                <th>Post</th>
+                <th>Response</th>
+
+
+            </tr>
+        </thead>
+        <!--<tfoot>-->
+            <!--<tr>-->
+
+            <!--</tr>-->
+        <!--</tfoot>-->
+        <tbody>
+            <tr>
+
+            </tr>
+
+        </tbody>
+    </table>
+
+
+
+  </div>
+</div>
+
+
+
+
+
+
+
+{% endblock %}
+
+
+
+{% block js %}
+//============DATATABLE=====================
+    var oTable = $('#paytable').dataTable({
+        // ...
+        "processing": true,
+        "serverSide": true,
+        "ajax": "{% url 'payment_list_json'  %}"
+    });
+    // ...
+
+
+
+{% endblock %}

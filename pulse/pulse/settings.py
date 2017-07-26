@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'shop.apps.ShopConfig',
     'smart_solar.apps.SmartSolarConfig',
     'bridge.apps.BridgeConfig',
+    'mobile_payments.apps.MobilePaymentsConfig',
 ]
 
 MIDDLEWARE = [

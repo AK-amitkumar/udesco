@@ -23,4 +23,5 @@ urlpatterns = [
     url(r'^smart_solar/', include('smart_solar.urls')),
     url(r'^bridge/', include('bridge.urls')),
     url(r'^admin/', admin.site.urls),
+    url(r'^mm/', include('mobile_payments.urls')),
 ]
