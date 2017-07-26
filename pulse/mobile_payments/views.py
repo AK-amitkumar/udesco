@@ -15,6 +15,7 @@ from shop.models import *
 
 import hmac
 import urllib
+import json
 
 import logging
 log = logging.getLogger(__name__)
@@ -35,32 +36,9 @@ def payment(request,payment_id):
     context = {'payment':payment}
     return render(request, 'mobile_payments/payment.html', context)
 
-
+@csrf_exempt
 def payment_post(request):
     '''
-    request.post looks like...
-{
-"account_number":"N/A",
-"amount":"500.0",
-"business_number":"854245",
-"currency":"Ksh",
-"first_name":"JANES",
-"internal_transaction_id":"5732369",
-"last_name":"ONDIEK",
-"middle_name":"",
-"password":"d0Mi7ANGCv6D",
-"sender_phone":"+254716050963",
-"service_name":"M-PESA",
-"signature":"5mlRQXOA9db8/kpzRF6PeQpch9A=",
-"transaction_reference":"LGI2LU3VKW",
-"transaction_timestamp":"2017-07-18T12:04:55Z",
-"transaction_type":"buygoods",
-"username":"bboxx"
-}
-
-key is...
-
-5aaa3b74cbe45ddcbfe5badec141b380bf63a444
 
     :param request:
     :param payment_id:
@@ -69,7 +47,7 @@ key is...
     #post comes in
 
     if request.method == 'POST':
-        post_body = request.json()
+        post_body = json.loads(request.body) #???
         #get mobile money provider AND from that get key to hash against
         provider = MMProvider.objects.get(username=post_body.get('username'),password=post_body.get('password'))
         #match post to a customer with phone number

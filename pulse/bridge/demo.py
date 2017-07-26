@@ -13,6 +13,7 @@ Use API Functions Below to create demo data for Pulse (fake and from ERP)
 
 from smart_solar.models import *
 from shop.models import *
+from mobile_payments.models import *
 
 from faker import Faker
 fake = Faker()
@@ -41,6 +42,8 @@ def make_demo_function():
     get_products()
     print 'Django CRMProduct --> ERP sales_order'
     make_crm_products()
+    print 'Creating MM Provider'
+    make_mm_provider()
     return True
 
 
@@ -155,6 +158,13 @@ def make_crm_products():
             p, cr = CRMProduct.objects.get_or_create(crm=c, product=products[2],serial_number='SN%s%s%s'%(fake.uuid4(),9,i))
         elif rando == 5:
             p, cr = CRMProduct.objects.get_or_create(crm=c, product=products[1],serial_number='SN%s%s%s'%(fake.uuid4(),10,i))
+
+def make_mm_provider():
+    MMProvider.objects.get_or_create(name='KopoKopo',username='bboxx',
+                                     password='d0Mi7ANGCv6D',
+                                     key='5aaa3b74cbe45ddcbfe5badec141b380bf63a444')
+
+
 
 
 
