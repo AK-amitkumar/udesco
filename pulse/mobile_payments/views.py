@@ -70,7 +70,7 @@ def payment_post(request):
             if len(crms)==1 and crms[0].state in ['normal','late','downpay']:
                 #create the payment
                 #the save method on this should do an erp payment creation - and return erpid
-                MMPayment.objects.get_or_create(crm=crms[0],provider=provider,post_body=str(post_body),response='good')
+                MMPayment.objects.get_or_create(crm=crms[0],provider=provider,post_body=json.dumps(post_body),response='good')
             elif len(crms)==0:
                 log.error('No CRMs found with this phone number')
             elif len(crms)>=0:
