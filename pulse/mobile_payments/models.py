@@ -55,8 +55,9 @@ class MMPayment(models.Model):
     erpid = models.IntegerField(null=True, blank=True)  # payment id (payment towards invoice)
     crm = models.ForeignKey(CRM)
     provider = models.ForeignKey(MMProvider)
-    post = JSONField(name='Mobile money post')
+    post_body = models.TextField(name='Mobile money post')
     response = models.CharField(max_length=200)
+    # post_body = JSONField(name='Mobile money post') #This is postgres only todo if I ever go off the sqlite - make this a JSONField
     def __unicode__(self):              # __str__ on Python 3
         return self.crm.id
 

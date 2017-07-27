@@ -84,17 +84,6 @@ class CRMProductFormsetLine(forms.Form):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 class CRMProductForm(ModelForm):
     def __init__(self, *args, **kwargs):
         # SET 'form-control' class on text fields to make them bootstrap style

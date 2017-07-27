@@ -96,7 +96,8 @@ class Customer(models.Model):
             if not field.is_relation and field.name != 'id':
                 # cannot write None to the ERP fields
                 if getattr(self, field.name):
-                    fields_dict[field.name] = getattr(self, field.name)
+                    fields_dict[field.name] = getattr(self, field.name) if field.name != 'phone' else ''.join(c for c in getattr(self, field.name) if c.isdigit())
+        self.phone=''.join(c for c in getattr(self, 'phone') if c.isdigit())
         fields_dict['name'] = fields_dict.get('first', '') + ' ' + fields_dict.get('last', '')
         if not self.pk:  # overwrite the create() method
             fields_dict['customer'] = True

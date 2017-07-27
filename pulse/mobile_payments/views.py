@@ -12,6 +12,7 @@ from .forms import *
 
 from .models import *
 from shop.models import *
+from hashlib import sha1
 
 import hmac
 import urllib
@@ -22,7 +23,18 @@ log = logging.getLogger(__name__)
 
 from django.views.decorators.csrf import csrf_exempt
 from django.forms.models import modelformset_factory, formset_factory,inlineformset_factory
-#import json
+
+
+
+
+
+#QUERYSET LOOKUPS (including time related ones)
+#https://docs.djangoproject.com/en/1.10/ref/models/querysets/#field-lookups
+
+
+#HOW to make custom lookups
+#https://docs.djangoproject.com/en/1.10/howto/custom-lookups/
+
 
 #move all the index stuff
 def index(request):
@@ -53,11 +65,12 @@ def payment_post(request):
         #match post to a customer with phone number
         key = provider.key
         if ValidateSignature(post_body,key):
-            crms = CRM.objects.filter(customer__phone = post_body['sender_phone'])
+            cleaned_post_phone = ''.join(c for c in post_body['sender_phone'] if c.isdigit())
+            crms = CRM.objects.filter(customer__phone__endswith = cleaned_post_phone)
             if len(crms)==1 and crms[0].state in ['normal','late','downpay']:
                 #create the payment
                 #the save method on this should do an erp payment creation - and return erpid
-                MMPayment.objects.get_or_create(crm=crms[0],provider=provider,post=post_body,reponse='good')
+                MMPayment.objects.get_or_create(crm=crms[0],provider=provider,post_body=str(post_body),response='good')
             elif len(crms)==0:
                 log.error('No CRMs found with this phone number')
             elif len(crms)>=0:
@@ -88,7 +101,7 @@ def ValidateSignature(post_body,key):
         return True
 
     try:
-        hashed = hmac.new(key, base_string, sha1)
+        hashed = hmac.new(str(key), str(base_string), sha1)
     except Exception as e:
         print 'error hash'
     sSignature = hashed.digest().encode("base64").rstrip('\n')
