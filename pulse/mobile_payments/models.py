@@ -55,7 +55,7 @@ class MMPayment(models.Model):
     erpid = models.IntegerField(null=True, blank=True)  # payment id (payment towards invoice)
     crm = models.ForeignKey(CRM)
     provider = models.ForeignKey(MMProvider)
-    post_body = models.TextField(name='Mobile money post')
+    post_body = models.TextField(verbose_name='Mobile money post')
     response = models.CharField(max_length=200)
     # post_body = JSONField(name='Mobile money post') #This is postgres only todo if I ever go off the sqlite - make this a JSONField
     def __unicode__(self):              # __str__ on Python 3
@@ -74,11 +74,11 @@ class MMPayment(models.Model):
                 # fields_dict['product_id'] = self.product.product_erpid
         if not self.pk:  # overwrite the create() method
             print 'MM Payment created'
-            erpid = api.create_erp('sale.order.line', fields_dict)
+            #erpid = api.create_erp('sale.order.line', fields_dict)
             # don't save if no erpid is returned
-            if erpid:
-                self.erpid = erpid
-                super(MMPayment, self).save(*args, **kwargs)
+            # if erpid:
+            #     self.erpid = erpid
+            #     super(MMPayment, self).save(*args, **kwargs)
         else:  # overwrite the save() method
             print 'MM Payment saved'
             api.write_erp('sale.order.line', [self.erpid], fields_dict)

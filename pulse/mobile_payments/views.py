@@ -75,10 +75,7 @@ def payment_post(request):
                 log.error('No CRMs found with this phone number')
             elif len(crms)>=0:
                 log.error('More than one CRM found with this phone number')
-
-        
-
-    return True
+    return HttpResponse('ok')
 
 
 def ValidateSignature(post_body,key):
