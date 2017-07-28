@@ -145,7 +145,8 @@ class CRM(models.Model):
     # res_partner of crm = True  // alternative is supplier = True
     # creation of crm chould only happen on creation of crm products - and this should generate sale order
     erpid = models.IntegerField(null=True, blank=True) #Unique CRM Id
-    invoice_erpid = models.IntegerField(null=True, blank=True) #Unique CRM Id
+    #invoice_erpid = models.IntegerField(null=True, blank=True) #Unique CRM Id
+    subs_erpid = models.IntegerField(null=True, blank=True)  # Unique CRM Id
     shop = models.ForeignKey('Shop') # linked through the invoice, not the shop
     customer = models.ForeignKey('Customer')
     state = models.CharField(max_length=200, choices = PAYMENT_STATE, default = 'draft')
@@ -176,31 +177,63 @@ class CRM(models.Model):
             else: #CRM is acting as an account.invoice
                 pass
                 #here you would have the writing to the invoice - but I do not think you want to do that
-            if 'invoice_erpid' in kwargs:
-                self.invoice_erpid = kwargs['invoice_erpid']
-                kwargs.pop('invoice_erpid')
+            if 'subs_erpid' in kwargs:
+                self.subs_erpid = kwargs['subs_erpid']
+                kwargs.pop('subs_erpid')
             if 'state' in kwargs:
                 self.state = kwargs['state']
                 kwargs.pop('state')
             super(CRM, self).save(*args, **kwargs)  # Call the "real" save() method.
 
-
-    # def action_confirm(self, *args, **kwargs):
-    #     api.function_erp('sale.order', 'action_confirm', [self.erpid])
-
-
+    #the ERP is in state draft - you want to confirm the sale and get them into downpay (create an invoice and a subscription)
     def action_invoice_create(self, *args, **kwargs):#'action_invoice_create' in kwargs:
         api.function_erp('sale.order', 'action_confirm', [self.erpid])
         invoice_ids = api.function_erp('sale.order', 'action_invoice_create', [self.erpid], kwarg_dict = {'context':{'active_ids':[self.erpid]}})
         if invoice_ids:
-            self.save(invoice_erpid=invoice_ids[0],state='downpay')
+            #todo create a subscription for that invoice    -    invoice_ids[0]
+            subscription_dict={'name':'recurring_invoice_%s'%invoice_ids[0],'user_id':1,'active':True,'interval_number':1,'interval_type':'months'}
+            subs_erpid = api.get_or_create_erp('subscription.subscription', subscription_dict)
+            if subs_erpid:
+                Invoice.objects.get_or_create(erpid=invoice_ids[0],crm=self.id)
+                self.save(subs_erpid=subs_erpid,state='downpay')
 
 
-    def action_invoice_open(self):#'action_invoice_create' in kwargs:
-        api.function_erp('account.invoice', 'action_invoice_open', [self.invoice_erpid], kwarg_dict = {'context':{'active_ids':[self.invoice_erpid]}})
-        self.save(state='normal')
+    # def action_invoice_open(self):#'action_invoice_create' in kwargs:
+    #     api.function_erp('account.invoice', 'action_invoice_open', [self.invoice_erpid], kwarg_dict = {'context':{'active_ids':[self.invoice_erpid]}})
+    #     self.save(state='normal')
+INVOICE_STATE = (('draft','Draft'),('open','Open'),('paid','Paid'),('cancel','Cancel'))
+
+class Invoice(models.Model):
+    crm = models.ForeignKey('CRM', on_delete=models.CASCADE, null=True, blank=True)
+    erpid = models.IntegerField(null=True, blank=True)  # Account Invoice id
+    state = models.CharField(max_length=200, choices = INVOICE_STATE, default = 'draft')
 
 
+    def save(self, *args, **kwargs):
+        fields_dict = {}
+        for field in self._meta.get_fields():
+            # do not write 'id' or foreign key fields to ERP
+            if not field.is_relation and field.name != 'id':
+                # cannot write None to the ERP fields
+                if getattr(self, field.name):
+                    fields_dict[field.name] = getattr(self, field.name)
+        if not self.pk:  # overwrite the create() method
+            fields_dict['partner_id'] = self.customer.erpid #the customer
+            erpid = api.create_erp('sale.order', fields_dict)
+            # don't save if no erpid is returned
+            if erpid:
+                self.erpid = erpid
+                super(Invoice, self).save(*args, **kwargs)
+        else:  # overwrite the save() method
+            if 'state' in kwargs:
+                self.state = kwargs['state']
+                kwargs.pop('state')
+            super(Invoice, self).save(*args, **kwargs)
+
+    def action_invoice_open(self):  # 'action_invoice_create' in kwargs:
+        api.function_erp('account.invoice', 'action_invoice_open', [self.erpid],
+                         kwarg_dict={'context': {'active_ids': [self.erpid]}})
+        self.save(state='open')
 
 #https://www.odoo.com/documentation/user/9.0/inventory/settings/products/variants.html
 #http://odoo-development.readthedocs.io/en/latest/odoo/models/product.template.html

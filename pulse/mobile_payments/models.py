@@ -54,7 +54,7 @@ class MMProvider(models.Model):
 class MMPayment(models.Model):
     # res_company/res_partner  in ERP
     erpid = models.IntegerField(null=True, blank=True)  # payment id (payment towards invoice)
-    crm = models.ForeignKey(CRM)
+    invoice = models.ForeignKey(Invoice)
     provider = models.ForeignKey(MMProvider)
     post_body = models.TextField(verbose_name='Mobile money post')
     response = models.CharField(max_length=200)
@@ -78,7 +78,7 @@ class MMPayment(models.Model):
         fields_dict = {'journal_id':journal_id, 'payment_date':transaction_timestamp, 'currency_id':3, 'amount':amount,
                        'payment_method_id':3, 'payment_type':'inbound', 'partner_id':self.crm.customer.erpid,
                        'partner_type':'customer', 'company_id':self.crm.shop.company.id, #'destination_account_id':None,
-                       'invoice_ids':[(6, 0,   [self.crm.invoice_erpid] )], 'payment_reference':str(getattr(self, 'crm'))+'mm', 'state':'draft'
+                       'invoice_ids':[(6, 0,   [self.invoice.erpid] )], 'payment_reference':str(getattr(self, 'crm'))+'mm', 'state':'draft'
                        }
         if not self.pk:  # overwrite the create() method
             print 'MM Payment created'
@@ -96,12 +96,12 @@ class MMPayment(models.Model):
                 #     allow_none = False
                 api.function_erp('account.payment', 'post', [erpid],
                                  kwarg_dict={'context': {'active_ids': [erpid]}})
-                invoice_state = api.search_read_erp('account.invoice',[('id','=',self.crm.invoice_erpid)],['state'])
+                invoice_state = api.search_read_erp('account.invoice',[('id','=',self.invoice.erpid)],['state'])
                 self.erpid = erpid
                 super(MMPayment, self).save(*args, **kwargs)
                 if invoice_state[0]['state'] in ['paid','cancel']: #draft, open, paid, cancel
-                    self.crm.state=invoice_state[0]['state']
-                    self.crm.save()
+                    self.invoice.state=invoice_state[0]['state']
+                    self.invoice.save()
         else:  # overwrite the save() method
             # todo - probably do not want this type of thing - probably want functions that corresponds to unlink, cancel etc. methods on accoount.invoice
             print 'MM Payment saved'

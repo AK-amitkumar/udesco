@@ -44,7 +44,7 @@ class CRMForm(ModelForm):
 
     class Meta:
         model = CRM
-        exclude = ['crm_products','state','erpid','invoice_erpid'] #'shop','customer'
+        exclude = ['crm_products','state','erpid','subs_erpid'] #'shop','customer'
 
 
 '''
