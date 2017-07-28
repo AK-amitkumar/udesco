@@ -199,7 +199,7 @@ class CRM(models.Model):
             # if subs_erpid:
             #     Invoice.objects.get_or_create(erpid=invoice_ids[0],crm=self.id)
             #     self.save(subs_erpid=subs_erpid,state='downpay')
-            Invoice.objects.get_or_create(erpid=invoice_ids[0],crm=self.id)
+            Invoice.objects.get_or_create(erpid=invoice_ids[0],crm_id=self.id)
             self.save(state='downpay')
 
 
@@ -219,7 +219,7 @@ class CRM(models.Model):
         if invoice_ids:
             #3. open the first (downpay) invoice, create corresponding model in ERP, save state to downpay
             api.function_erp('account.invoice', 'action_invoice_open', invoice_ids, kwarg_dict = {'context':{'active_ids':invoice_ids}})
-            Invoice.objects.get_or_create(erpid=invoice_ids[0], crm=self.id)
+            Invoice.objects.get_or_create(erpid=invoice_ids[0], crm_id=self.id)
             self.save(state='downpay')
 
 
@@ -254,12 +254,7 @@ class Invoice(models.Model):
                 if getattr(self, field.name):
                     fields_dict[field.name] = getattr(self, field.name)
         if not self.pk:  # overwrite the create() method
-            fields_dict['partner_id'] = self.customer.erpid #the customer
-            erpid = api.create_erp('sale.order', fields_dict)
-            # don't save if no erpid is returned
-            if erpid:
-                self.erpid = erpid
-                super(Invoice, self).save(*args, **kwargs)
+            super(Invoice, self).save(*args, **kwargs)
         else:  # overwrite the save() method
             if 'state' in kwargs:
                 self.state = kwargs['state']
