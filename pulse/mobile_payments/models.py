@@ -75,28 +75,33 @@ class MMPayment(models.Model):
         currency = post_body.get('currency',0)
         transaction_timestamp = post_body.get('transaction_timestamp',datetime.datetime.utcnow())
         journal_id = 6 #account.journal type = 'cash' or 'bank' company_id = your company
-        fields_dict = {'journal_id':6, 'payment_date':transaction_timestamp, 'currency_id':3, 'amount':amount,
+        fields_dict = {'journal_id':journal_id, 'payment_date':transaction_timestamp, 'currency_id':3, 'amount':amount,
                        'payment_method_id':3, 'payment_type':'inbound', 'partner_id':self.crm.customer.erpid,
                        'partner_type':'customer', 'company_id':self.crm.shop.company.id, #'destination_account_id':None,
-                       'invoice_ids':[self.crm.invoice_erpid], 'payment_reference':str(getattr(self, 'crm'))+'mm', 'state':'draft'
+                       'invoice_ids':[(6, 0,   [self.crm.invoice_erpid] )], 'payment_reference':str(getattr(self, 'crm'))+'mm', 'state':'draft'
                        }
-        #state: [('draft', 'Draft'), ('posted', 'Posted'), ('sent', 'Sent'), ('reconciled', 'Reconciled')]
-        # for field in self._meta.get_fields():
-        #     # do not write 'id' or foreign key fields to ERP
-        #     if not field.is_relation and field.name != 'id':
-        #         # cannot write None to the ERP fields
-        #         if getattr(self, field.name):
-        #             fields_dict[field.name] = getattr(self, field.name)
         if not self.pk:  # overwrite the create() method
             print 'MM Payment created'
             # todo - how the hell do i create payment and apply to invoice???
             # 1. create an account.payment
             erpid = api.create_erp('account.payment', fields_dict)
             if erpid:
+                #the actual post method returns None
+                #but the xmlrpc_return function in wsgi_server.py expects a return
+                #>>> e  TypeError('cannot marshal None unless allow_none is enabled',)
+                #made a little hack in the erp ...
+                # if len(params) >= 5 and params[3] == 'account.payment' and params[4] == 'post':
+                #     allow_none = True
+                # else:
+                #     allow_none = False
                 api.function_erp('account.payment', 'post', [erpid],
                                  kwarg_dict={'context': {'active_ids': [erpid]}})
+                invoice_state = api.search_read_erp('account.invoice',[('id','=',self.crm.invoice_erpid)],['state'])
                 self.erpid = erpid
                 super(MMPayment, self).save(*args, **kwargs)
+                if invoice_state[0]['state'] in ['paid','cancel']: #draft, open, paid, cancel
+                    self.crm.state=invoice_state[0]['state']
+                    self.crm.save()
         else:  # overwrite the save() method
             # todo - probably do not want this type of thing - probably want functions that corresponds to unlink, cancel etc. methods on accoount.invoice
             print 'MM Payment saved'

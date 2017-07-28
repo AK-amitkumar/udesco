@@ -32,18 +32,20 @@ UID = api.auth_erp()
 
 
 def make_demo_function():
-    print 'ERP res_country --> Django Country'
-    get_countries()
-    print 'ERP res_partner --> Django Company (erpid of res_partner id)'
-    comp, country = get_company()
-    print 'DJANGO Shop'
-    make_shops(comp, country)
-    print 'ERP product_template --> Django Product (erpid of product_template id)'
-    get_products()
-    print 'Django CRMProduct --> ERP sales_order'
-    make_crm_products()
-    print 'Creating MM Provider'
-    make_mm_provider()
+    # print 'ERP res_country --> Django Country'
+    # get_countries()
+    # print 'ERP res_partner --> Django Company (erpid of res_partner id)'
+    # comp, country = get_company()
+    # print 'DJANGO Shop'
+    # make_shops(comp, country)
+    # print 'ERP product_template --> Django Product (erpid of product_template id)'
+    # get_products()
+    # print 'Django CRMProduct --> ERP sales_order'
+    # make_crm_products()
+    # print 'Creating MM Provider'
+    # make_mm_provider()
+    print 'Invoice all customers in third shop'
+    make_invoices()
     return True
 
 
@@ -165,6 +167,16 @@ def make_mm_provider():
                                      key='5aaa3b74cbe45ddcbfe5badec141b380bf63a444')
 
 
+#make invoices - by calling
+def make_invoices():
+    crms = CRM.objects.filter(shop=3, state='draft') # make all of the crms in the third shop invoiced
+    for crm in crms:
+        customer = crm.customer
+        customer.phone = "+254716050%s"%crm.id   #"+254716050964"
+        customer.save()
+        if len(crm.crm_products.all()) > 0:
+            crm.action_invoice_create()
+            crm.action_invoice_open()
 
 
 

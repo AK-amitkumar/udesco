@@ -53,8 +53,12 @@ def xmlrpc_return(start_response, service, method, params, string_faultcode=Fals
     # This also mimics SimpleXMLRPCDispatcher._marshaled_dispatch() for
     # exception handling.
     try:
+        if len(params) >= 5 and params[3] == 'account.payment' and params[4] == 'post':
+            allow_none = True
+        else:
+            allow_none = False
         result = odoo.http.dispatch_rpc(service, method, params)
-        response = xmlrpclib.dumps((result,), methodresponse=1, allow_none=False, encoding=None)
+        response = xmlrpclib.dumps((result,), methodresponse=1, allow_none=allow_none, encoding=None)
     except Exception, e:
         if string_faultcode:
             response = xmlrpc_handle_exception_string(e)

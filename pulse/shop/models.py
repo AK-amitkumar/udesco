@@ -139,7 +139,7 @@ class Supplier(models.Model):
 
 
 PAYMENT_STATE = (('draft','Draft'),('downpay','Downpay'),('late','Late'),
-                 ('normal','Normal'),('defaulted','Defaulted'),('repo','Repossessed'),('paid','Paid'))
+                 ('normal','Normal'),('defaulted','Defaulted'),('repo','Repossessed'),('paid','Paid'),('cancel','Cancel'))
 
 class CRM(models.Model):
     # res_partner of crm = True  // alternative is supplier = True
@@ -171,7 +171,11 @@ class CRM(models.Model):
                 super(CRM, self).save(*args, **kwargs)
         else:  # overwrite the save() method
             if not kwargs:#'invoice_erpid' not in kwargs and 'state' not in kwargs:
-                api.write_erp('sale.order', [self.erpid], fields_dict)
+                if self.state == 'draft': #CRM is acting as a sale.order
+                    api.write_erp('sale.order', [self.erpid], fields_dict)
+            else: #CRM is acting as an account.invoice
+                pass
+                #here you would have the writing to the invoice - but I do not think you want to do that
             if 'invoice_erpid' in kwargs:
                 self.invoice_erpid = kwargs['invoice_erpid']
                 kwargs.pop('invoice_erpid')

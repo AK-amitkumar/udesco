@@ -73,8 +73,10 @@ def payment_post(request):
                 MMPayment.objects.get_or_create(crm=crms[0],provider=provider,post_body=json.dumps(post_body),response='good')
             elif len(crms)==0:
                 log.error('No CRMs found with this phone number')
+                pass
             elif len(crms)>=0:
                 log.error('More than one CRM found with this phone number')
+                pass
     return HttpResponse('ok')
 
 
