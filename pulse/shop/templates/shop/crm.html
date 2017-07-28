@@ -29,14 +29,17 @@
 
 
       <!-- should change active to False -->
+           {% if crm.state == 'draft'  %}
                           <button class="btn btn-default btn-lg" type = 'submit' name="action_invoice_create">
   <span class="glyphicon glyphicon-star" aria-hidden="true"></span> Create Invoice
 </button>
-
+ {% elif crm.state == 'downpay'  %}
 
                                     <button class="btn btn-default btn-lg" type = 'submit' name="action_invoice_open">
   <span class="glyphicon glyphicon-star" aria-hidden="true"></span> Open Invoice
 </button>
+
+          {% endif %}
 
 
 
