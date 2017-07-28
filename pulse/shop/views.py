@@ -128,6 +128,8 @@ def crm(request, crm_id=None):
             crm.action_invoice_create()
         elif 'action_invoice_open' in request.POST:  # Create Invoices - create_invoices (when you install)
             crm.action_invoice_open()
+        elif 'action_invoice_create_and_open' in request.POST:
+            crm.action_invoice_create_and_open()
         return HttpResponseRedirect(reverse('crm_detail', args=[crm.id]))
 
     # if a GET (or any other method) we'll create a blank form

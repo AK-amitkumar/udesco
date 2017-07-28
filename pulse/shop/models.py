@@ -185,22 +185,58 @@ class CRM(models.Model):
                 kwargs.pop('state')
             super(CRM, self).save(*args, **kwargs)  # Call the "real" save() method.
 
-    #the ERP is in state draft - you want to confirm the sale and get them into downpay (create an invoice and a subscription)
+    #the CRM is created as a sae.order in state draft (Quotation)
+    # When you confirm the sale, sale.order confirmed - an account.invoice opened in draft, state of CRM to (pay)'downpay'
+    # then what? post invoice (must be posted to pay against) this will be the downpay
+    # when the downpay is paid (state will go to paid) call action_downpay_paid to generate the subscriptions
     def action_invoice_create(self, *args, **kwargs):#'action_invoice_create' in kwargs:
         api.function_erp('sale.order', 'action_confirm', [self.erpid])
         invoice_ids = api.function_erp('sale.order', 'action_invoice_create', [self.erpid], kwarg_dict = {'context':{'active_ids':[self.erpid]}})
         if invoice_ids:
+            # #todo create a subscription for that invoice    -    invoice_ids[0]
+            # subscription_dict={'name':'recurring_invoice_%s'%invoice_ids[0],'user_id':1,'active':True,'interval_number':1,'interval_type':'months'}
+            # subs_erpid = api.get_or_create_erp('subscription.subscription', subscription_dict)
+            # if subs_erpid:
+            #     Invoice.objects.get_or_create(erpid=invoice_ids[0],crm=self.id)
+            #     self.save(subs_erpid=subs_erpid,state='downpay')
+            Invoice.objects.get_or_create(erpid=invoice_ids[0],crm=self.id)
+            self.save(state='downpay')
+
+
+    def action_invoice_open(self):#'action_invoice_create' in kwargs:
+        api.function_erp('account.invoice', 'action_invoice_open', [self.invoice_set.all()[0].erpid], kwarg_dict = {'context':{'active_ids':[self.invoice_set.all()[0].erpid]}})
+        self.save(state='normal')
+
+    def action_invoice_create_and_open(self):#'action_invoice_create' in kwargs:
+        '''
+        Call when you confirm sale, will create the first (downpay) invoice
+        :return: 
+        '''
+        #1. cofirm sale_order
+        api.function_erp('sale.order', 'action_confirm', [self.erpid])
+        #2. create invoice in 'draft'
+        invoice_ids = api.function_erp('sale.order', 'action_invoice_create', [self.erpid], kwarg_dict = {'context':{'active_ids':[self.erpid]}})
+        if invoice_ids:
+            #3. open the first (downpay) invoice, create corresponding model in ERP, save state to downpay
+            api.function_erp('account.invoice', 'action_invoice_open', invoice_ids, kwarg_dict = {'context':{'active_ids':invoice_ids}})
+            Invoice.objects.get_or_create(erpid=invoice_ids[0], crm=self.id)
+            self.save(state='downpay')
+
+
+    def action_downpay_paid(self):#'action_invoice_create' in kwargs:
+        '''
+        Call when downpay is paid - will create the subscription (recurring invoice) and then start the cron
+        :return: 
+        '''
+        downpay_id = self.invoice_set.all()
+        if downpay_id:
             #todo create a subscription for that invoice    -    invoice_ids[0]
-            subscription_dict={'name':'recurring_invoice_%s'%invoice_ids[0],'user_id':1,'active':True,'interval_number':1,'interval_type':'months'}
+            subscription_dict={'name':'recurring_invoice_%s'%downpay_id[0],'user_id':1,'active':True,'interval_number':1,'interval_type':'months'}
             subs_erpid = api.get_or_create_erp('subscription.subscription', subscription_dict)
             if subs_erpid:
-                Invoice.objects.get_or_create(erpid=invoice_ids[0],crm=self.id)
                 self.save(subs_erpid=subs_erpid,state='downpay')
 
 
-    # def action_invoice_open(self):#'action_invoice_create' in kwargs:
-    #     api.function_erp('account.invoice', 'action_invoice_open', [self.invoice_erpid], kwarg_dict = {'context':{'active_ids':[self.invoice_erpid]}})
-    #     self.save(state='normal')
 INVOICE_STATE = (('draft','Draft'),('open','Open'),('paid','Paid'),('cancel','Cancel'))
 
 class Invoice(models.Model):
@@ -227,13 +263,12 @@ class Invoice(models.Model):
         else:  # overwrite the save() method
             if 'state' in kwargs:
                 self.state = kwargs['state']
+                # if the downpay is paid - call the function to make subscriptions
+                if kwargs['state'] == 'paid' and not self.crm.subs_erpid:
+                    self.crm.action_downpay_paid()
                 kwargs.pop('state')
             super(Invoice, self).save(*args, **kwargs)
 
-    def action_invoice_open(self):  # 'action_invoice_create' in kwargs:
-        api.function_erp('account.invoice', 'action_invoice_open', [self.erpid],
-                         kwarg_dict={'context': {'active_ids': [self.erpid]}})
-        self.save(state='open')
 
 #https://www.odoo.com/documentation/user/9.0/inventory/settings/products/variants.html
 #http://odoo-development.readthedocs.io/en/latest/odoo/models/product.template.html

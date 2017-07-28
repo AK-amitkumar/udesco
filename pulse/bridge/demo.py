@@ -176,8 +176,7 @@ def make_invoices():
         customer.save()
         if len(crm.crm_products.all()) > 0:
             crm.action_invoice_create()
-            for i in crm.invoice_set.all():
-                i.action_invoice_open()
+            crm.action_invoice_open()
 
 
 
