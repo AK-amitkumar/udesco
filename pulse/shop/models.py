@@ -224,13 +224,12 @@ class CRM(models.Model):
         Call when downpay is paid - will create the subscription (recurring invoice) and then start the cron
         :return: 
         '''
-        downpay_id = self.invoice_set.all()
-        if downpay_id:
-            #todo create a subscription for that invoice    -    invoice_ids[0]
-            subscription_dict={'name':'recurring_invoice_%s'%downpay_id[0],'user_id':1,'active':True,'interval_number':1,'interval_type':'months'}
-            subs_erpid = api.get_or_create_erp('subscription.subscription', subscription_dict)
-            if subs_erpid:
-                self.save(subs_erpid=subs_erpid,state='downpay')
+        downpay_id = self.invoice_set.all()[0].erpid
+        #todo create a subscription for that invoice    -    invoice_ids[0]
+        subscription_dict={'doc_source':'account.invoice,%d'%downpay_id,'name':'recurring_invoice_%s'%downpay_id,'user_id':1,'active':True,'interval_number':1,'interval_type':'months'}
+        subs_erpid = api.get_or_create_erp('subscription.subscription', subscription_dict)
+        if subs_erpid:
+            self.save(subs_erpid=subs_erpid,state='normal')
 
 
 INVOICE_STATE = (('draft','Draft'),('open','Open'),('paid','Paid'),('cancel','Cancel'))
@@ -273,8 +272,8 @@ class Invoice(models.Model):
             super(Invoice, self).save(*args, **kwargs)
 
     def action_invoice_open(self):  # 'action_invoice_create' in kwargs:
-        api.function_erp('account.invoice', 'action_invoice_open', [self.invoice_set.all()[0].erpid],
-                         kwarg_dict={'context': {'active_ids': [self.invoice_set.all()[0].erpid]}})
+        api.function_erp('account.invoice', 'action_invoice_open', [self.erpid],
+                         kwarg_dict={'context': {'active_ids': [self.erpid]}})
         self.save(state='open')
         # self.crm.save(state='normal')
 

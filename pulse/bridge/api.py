@@ -225,14 +225,22 @@ def get_or_create_erp(model,create_dict,username = USERNAME, password = PASSWORD
     except Exception as e:
         print e
         if "Fault 2: 'None'" in str(e):
-            got_or_created_id = sock_models.execute_kw(db, uid, password, model, 'create', [create_dict])
+            try:
+                got_or_created_id = sock_models.execute_kw(db, uid, password, model, 'create', [create_dict])
+            except Exception as e:
+                print e
+                raise
             return got_or_created_id
         else:
             raise
     if ids:
         got_or_created_id = ids[0]
     else:
-        got_or_created_id = sock_models.execute_kw(db, uid, password, model, 'create', [create_dict])
+        try:
+            got_or_created_id = sock_models.execute_kw(db, uid, password, model, 'create', [create_dict])
+        except Exception as e:
+            print e
+            raise
     return got_or_created_id
 
 
