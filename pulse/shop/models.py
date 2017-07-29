@@ -271,11 +271,23 @@ class Invoice(models.Model):
             #     kwargs.pop('state')
             super(Invoice, self).save(*args, **kwargs)
 
+
+
     def action_invoice_open(self):  # 'action_invoice_create' in kwargs:
         api.function_erp('account.invoice', 'action_invoice_open', [self.erpid],
                          kwarg_dict={'context': {'active_ids': [self.erpid]}})
         self.save(state='open')
-        # self.crm.save(state='normal')
+
+        #todo test this next bit
+        # assign_outstanding_credit (if they overpaid on last invoice)
+        # logic to how to gt aml can be found here (how they get line)
+        # self.outstanding_credits_debits_widget = json.dumps(False)
+
+        # made similar function _get_outstanding_account_move_lines to get the outstanding aml_ids
+        aml_ids = api.function_erp('account.invoice', '_get_outstanding_account_move_lines', [self.erpid])
+        for aml_id in aml_ids:
+            api.function_erp('account.invoice', 'assign_outstanding_credit', [self.erpid, aml_id],
+                         kwarg_dict={'context': {'active_ids': [self.erpid]}})
 
 
 #https://www.odoo.com/documentation/user/9.0/inventory/settings/products/variants.html
