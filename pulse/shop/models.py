@@ -224,7 +224,9 @@ class CRM(models.Model):
         Call when downpay is paid - will create the subscription (recurring invoice) and then start the cron
         :return: 
         '''
+        log.info('Start - Action Downpay Paid')
         downpay_id = self.invoice_set.all()[0].erpid
+        log.info('Downpay Found - id is %s'%downpay_id)
         #todo create a subscription for that invoice    -    invoice_ids[0]
         subscription_dict={'doc_source':'account.invoice,%d'%downpay_id,'name':'recurring_invoice_%s'%downpay_id,'user_id':1,'active':True,'interval_number':1,'interval_type':'months'}
         subs_erpid = api.get_or_create_erp('subscription.subscription', subscription_dict)
@@ -274,6 +276,7 @@ class Invoice(models.Model):
 
 
     def action_invoice_open(self):  # 'action_invoice_create' in kwargs:
+        log.info('Start - Invoice Level Open')
         api.function_erp('account.invoice', 'action_invoice_open', [self.erpid],
                          kwarg_dict={'context': {'active_ids': [self.erpid]}})
         self.save(state='open')
@@ -284,13 +287,53 @@ class Invoice(models.Model):
         # self.outstanding_credits_debits_widget = json.dumps(False)
 
         # made similar function _get_outstanding_account_move_lines to get the outstanding aml_ids
+        log.info('Try and get amls')
         aml_ids = api.function_erp('account.invoice', '_get_outstanding_account_move_lines', [self.erpid])
+        log.info('GOT amls %s'%str(aml_ids))
         for aml_id in aml_ids:
             if 1: #self.state == 'open': #todo maybe here
                 api.function_erp('account.invoice', 'assign_outstanding_credit', [self.erpid, aml_id],
                              kwarg_dict={'context': {'active_ids': [self.erpid]}})
             #self.save() #todo - aybe here
         self.save() #set invoice to post
+
+
+# [2017-07-29 22:33:46,648: DEBUG/MainProcess] Task accepted: pulse.celery.invoice_check[77ade3fc-1c13-45e9-8784-c7ce8ecfa996] pid:20376
+# [2017-07-29 22:33:46,648: INFO/ForkPoolWorker-2] Celery Scheduled Invoivce Check
+# [2017-07-29 22:33:46,667: INFO/ForkPoolWorker-2] # of draft invoices = 2
+# [2017-07-29 22:33:46,667: INFO/ForkPoolWorker-2] {'origin': 'SO144', 'id': 49}
+# [2017-07-29 22:33:46,674: INFO/ForkPoolWorker-2] SO = SO144
+# [2017-07-29 22:33:46,675: INFO/ForkPoolWorker-2] Creating Invoice
+# [2017-07-29 22:33:46,700: INFO/ForkPoolWorker-2] call action_invoice_open() on invoice 43
+# [2017-07-29 22:33:46,700: INFO/ForkPoolWorker-2] Start - Invoice Level Open
+# [2017-07-29 22:33:47,069: INFO/ForkPoolWorker-2] Try and get amls
+# [2017-07-29 22:33:47,073: ERROR/ForkPoolWorker-2] Task pulse.celery.invoice_check[77ade3fc-1c13-45e9-8784-c7ce8ecfa996] raised unexpected: Error()
+# Traceback (most recent call last):
+#   File "/home/aiden/udesco/venv/local/lib/python2.7/site-packages/celery/app/trace.py", line 374, in trace_task
+#     R = retval = fun(*args, **kwargs)
+#   File "/home/aiden/udesco/venv/local/lib/python2.7/site-packages/celery/app/trace.py", line 629, in __protected_call__
+#     return self.run(*args, **kwargs)
+#   File "/home/aiden/udesco/pulse/pulse/celery.py", line 75, in invoice_check
+#     new_draft_invoice.action_invoice_open()
+#   File "/home/aiden/udesco/pulse/shop/models.py", line 291, in action_invoice_open
+#     aml_ids = api.function_erp('account.invoice', '_get_outstanding_account_move_lines', [self.erpid])
+#   File "/home/aiden/udesco/pulse/bridge/api.py", line 318, in function_erp
+#     arg_list, kwarg_dict)
+#   File "/usr/lib/python2.7/xmlrpclib.py", line 1243, in __call__
+#     return self.__send(self.__name, args)
+#   File "/usr/lib/python2.7/xmlrpclib.py", line 1602, in __request
+#     verbose=self.__verbose
+#   File "/usr/lib/python2.7/xmlrpclib.py", line 1283, in request
+#     return self.single_request(host, handler, request_body, verbose)
+#   File "/usr/lib/python2.7/xmlrpclib.py", line 1316, in single_request
+#     return self.parse_response(response)
+#   File "/usr/lib/python2.7/xmlrpclib.py", line 1493, in parse_response
+#     return u.close()
+#   File "/usr/lib/python2.7/xmlrpclib.py", line 800, in close
+#     raise Fault(**self._stack[0])
+# Fault: Error()
+
+
 
 
 #https://www.odoo.com/documentation/user/9.0/inventory/settings/products/variants.html

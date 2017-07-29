@@ -60,20 +60,52 @@ def invoice_check(args):
     from shop.models import CRM, Invoice
     from bridge import api
     read_dict_list = api.search_read_erp('account.invoice', [('state','=','draft')],['id','origin'])
-    log.info('# of draft invoices = %s'%str(read_dict_list))
+    log.info('# of draft invoices = %s'%len(read_dict_list))
     for read_dict in read_dict_list:
+        log.info(read_dict)
         crm_ids = api.search_erp('sale.order', [('name', '=', read_dict['origin'])])
         log.info('SO = %s'%read_dict['origin'])
         if crm_ids:
             # todo only create new draft invoice if customer has paid last invoice
             log.info('Creating Invoice')
-            new_draft_invoice = Invoice.objects.get_or_create(erpid=read_dict['id'], crm_id=crm_ids[0])
-            log.info('Posting Invoice %s'%new_draft_invoice.id)
+            new_draft_invoice, cr = Invoice.objects.get_or_create(erpid=read_dict['id'], crm_id=crm_ids[0])
+            log.info('call action_invoice_open() on invoice %s'%new_draft_invoice.id)
             # todo OR MAYBE only post invoice if customer has paid last invoice
             #post invoice and apply payments
             new_draft_invoice.action_invoice_open()
     return True
-
+#
+# [2017-07-29 22:09:38,248: INFO/ForkPoolWorker-3] Celery Scheduled Invoivce Check
+# [2017-07-29 22:09:38,271: INFO/ForkPoolWorker-3] # of draft invoices = 2
+# [2017-07-29 22:09:38,271: INFO/ForkPoolWorker-3] {'origin': 'SO139', 'id': 48}
+# [2017-07-29 22:09:38,284: INFO/ForkPoolWorker-3] SO = SO139
+# [2017-07-29 22:09:38,285: INFO/ForkPoolWorker-3] Creating Invoice
+# [2017-07-29 22:09:38,312: INFO/ForkPoolWorker-3] Invoice object
+# [2017-07-29 22:09:38,797: ERROR/ForkPoolWorker-3] Task pulse.celery.invoice_check[c423d2d3-579a-41b9-9adf-199ec4197390] raised unexpected: Error()
+# Traceback (most recent call last):
+#   File "/home/aiden/udesco/venv/local/lib/python2.7/site-packages/celery/app/trace.py", line 374, in trace_task
+#     R = retval = fun(*args, **kwargs)
+#   File "/home/aiden/udesco/venv/local/lib/python2.7/site-packages/celery/app/trace.py", line 629, in __protected_call__
+#     return self.run(*args, **kwargs)
+#   File "/home/aiden/udesco/pulse/pulse/celery.py", line 75, in invoice_check
+#     new_draft_invoice.action_invoice_open()
+#   File "/home/aiden/udesco/pulse/shop/models.py", line 287, in action_invoice_open
+#     aml_ids = api.function_erp('account.invoice', '_get_outstanding_account_move_lines', [self.erpid])
+#   File "/home/aiden/udesco/pulse/bridge/api.py", line 318, in function_erp
+#     arg_list, kwarg_dict)
+#   File "/usr/lib/python2.7/xmlrpclib.py", line 1243, in __call__
+#     return self.__send(self.__name, args)
+#   File "/usr/lib/python2.7/xmlrpclib.py", line 1602, in __request
+#     verbose=self.__verbose
+#   File "/usr/lib/python2.7/xmlrpclib.py", line 1283, in request
+#     return self.single_request(host, handler, request_body, verbose)
+#   File "/usr/lib/python2.7/xmlrpclib.py", line 1316, in single_request
+#     return self.parse_response(response)
+#   File "/usr/lib/python2.7/xmlrpclib.py", line 1493, in parse_response
+#     return u.close()
+#   File "/usr/lib/python2.7/xmlrpclib.py", line 800, in close
+#     raise Fault(**self._stack[0])
+# Fault: Error()
 
 
 
