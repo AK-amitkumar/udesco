@@ -64,6 +64,7 @@ if [[ "" !=  "$PID" ]]; then
 fi
 
 source venv/bin/activate
+pip install -r all-requirements.txt
 
 cd odoo10
 

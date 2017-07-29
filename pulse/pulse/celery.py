@@ -7,6 +7,9 @@ from celery.schedules import crontab
 #Import models
 
 
+import logging
+log = logging.getLogger(__name__)
+
 # set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pulse.settings')
 
@@ -30,31 +33,42 @@ app.autodiscover_tasks()
 # or with 'beats' (sheduled tasks) $celery -A pulse beat -l debug
 # from helpful article - https://stackoverflow.com/questions/41119053/connect-new-celery-periodic-task-in-django
 
+# quit and restart celery beats
+# celery -A pulse worker --events -B -S django -l debug   <------ THIS ONE ACTUALLY RUNS THE PERIODIC TASKS
+
+
+# celery -A pulse events -l debug --camera django_celery_monitor.camera.Camera --frequency=2
+
 
 @app.on_after_configure.connect
 def periodic_tasks(sender, **kwargs):
     # Calls test('hello') every 10 seconds.
     # the .s syntax http://docs.celeryproject.org/en/latest/reference/celery.html#celery.signature
-    sender.add_periodic_task(10.0, invoice_check.s(), name='10 Second Invoice Check')
+    sender.add_periodic_task(5.0, invoice_check.s(1), name='5 Second Invoice Check')
 
 
-    # Executes every Monday morning at 7:30 a.m.
-    sender.add_periodic_task(
-        crontab(hour=7, minute=30, day_of_week=1),
-        invoice_check.s(),
-    )
+    # # Executes every Monday morning at 7:30 a.m.
+    # sender.add_periodic_task(
+    #     crontab(hour=7, minute=30, day_of_week=1),
+    #     invoice_check.s(),
+    # )
 
 
 @app.task
-def invoice_check():
+def invoice_check(args):
+    log.info('Celery Scheduled Invoivce Check')
     from shop.models import CRM, Invoice
     from bridge import api
     read_dict_list = api.search_read_erp('account.invoice', [('state','=','draft')],['id','origin'])
+    log.info('# of draft invoices = %s'%str(read_dict_list))
     for read_dict in read_dict_list:
         crm_ids = api.search_erp('sale.order', [('name', '=', read_dict['origin'])])
+        log.info('SO = %s'%read_dict['origin'])
         if crm_ids:
             # todo only create new draft invoice if customer has paid last invoice
-            new_draft_invoice = Invoice.objects.get_or_create(erpid=read_dict['origin'], crm_id=crm_ids[0])
+            log.info('Creating Invoice')
+            new_draft_invoice = Invoice.objects.get_or_create(erpid=read_dict['id'], crm_id=crm_ids[0])
+            log.info('Posting Invoice %s'%new_draft_invoice.id)
             # todo OR MAYBE only post invoice if customer has paid last invoice
             #post invoice and apply payments
             new_draft_invoice.action_invoice_open()

@@ -32,18 +32,18 @@ UID = api.auth_erp()
 
 
 def make_demo_function():
-    print 'ERP res_country --> Django Country'
-    get_countries()
-    print 'ERP res_partner --> Django Company (erpid of res_partner id)'
-    comp, country = get_company()
-    print 'DJANGO Shop'
-    make_shops(comp, country)
-    print 'ERP product_template --> Django Product (erpid of product_template id)'
-    get_products()
-    print 'Django CRMProduct --> ERP sales_order'
-    make_crm_products()
-    print 'Creating MM Provider'
-    make_mm_provider()
+    # print 'ERP res_country --> Django Country'
+    # get_countries()
+    # print 'ERP res_partner --> Django Company (erpid of res_partner id)'
+    # comp, country = get_company()
+    # print 'DJANGO Shop'
+    # make_shops(comp, country)
+    # print 'ERP product_template --> Django Product (erpid of product_template id)'
+    # get_products()
+    # print 'Django CRMProduct --> ERP sales_order'
+    # make_crm_products()
+    # print 'Creating MM Provider'
+    # make_mm_provider()
     print 'Invoice all customers in third shop'
     make_invoices()
     return True
