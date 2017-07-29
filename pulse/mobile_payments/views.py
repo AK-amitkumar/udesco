@@ -66,17 +66,21 @@ def payment_post(request):
         key = provider.key
         if ValidateSignature(post_body,key):
             cleaned_post_phone = ''.join(c for c in post_body['sender_phone'] if c.isdigit())
-            crms = CRM.objects.filter(customer__phone__endswith = cleaned_post_phone)
-            if len(crms)==1 and crms[0].state in ['normal','late','downpay']:
+            crms = CRM.objects.filter(customer__phone__endswith = cleaned_post_phone, state__in=['normal','late','downpay'])
+            if len(crms)==1:
                 #create the payment
-                #the save method on this should do an erp payment creation - and return erpid
-                MMPayment.objects.get_or_create(crm=crms[0],provider=provider,post_body=json.dumps(post_body),response='good')
+                crm = crms[0]
+                open_invoices = crm.invoice_set.filter(state='open')
+                if len(open_invoices) == 1:
+                    MMPayment.objects.get_or_create(invoice=open_invoices[0],provider=provider,post_body=json.dumps(post_body),response='good')
+                elif len(open_invoices)==0:
+                    log.error('No Open Invoices found for this CRM')
+                elif len(open_invoices)>=0:
+                    log.error('More than one Open Invoice found with this CRM')
             elif len(crms)==0:
                 log.error('No CRMs found with this phone number')
-                pass
             elif len(crms)>=0:
                 log.error('More than one CRM found with this phone number')
-                pass
     return HttpResponse('ok')
 
 

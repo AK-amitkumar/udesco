@@ -175,8 +175,8 @@ def make_invoices():
         customer.phone = "+254716050%s"%crm.id   #"+254716050964"
         customer.save()
         if len(crm.crm_products.all()) > 0:
-            crm.action_invoice_create()
-            crm.action_invoice_open()
+            crm.action_invoice_create_and_open()
+            #crm.action_invoice_open()
 
 
 

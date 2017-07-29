@@ -203,10 +203,6 @@ class CRM(models.Model):
             self.save(state='downpay')
 
 
-    def action_invoice_open(self):#'action_invoice_create' in kwargs:
-        api.function_erp('account.invoice', 'action_invoice_open', [self.invoice_set.all()[0].erpid], kwarg_dict = {'context':{'active_ids':[self.invoice_set.all()[0].erpid]}})
-        self.save(state='normal')
-
     def action_invoice_create_and_open(self):#'action_invoice_create' in kwargs:
         '''
         Call when you confirm sale, will create the first (downpay) invoice
@@ -246,23 +242,41 @@ class Invoice(models.Model):
 
 
     def save(self, *args, **kwargs):
-        fields_dict = {}
-        for field in self._meta.get_fields():
-            # do not write 'id' or foreign key fields to ERP
-            if not field.is_relation and field.name != 'id':
-                # cannot write None to the ERP fields
-                if getattr(self, field.name):
-                    fields_dict[field.name] = getattr(self, field.name)
+        # fields_dict = {}
+        # for field in self._meta.get_fields():
+        #     # do not write 'id' or foreign key fields to ERP
+        #     if not field.is_relation and field.name != 'id':
+        #         # cannot write None to the ERP fields
+        #         if getattr(self, field.name):
+        #             fields_dict[field.name] = getattr(self, field.name)
+        invoice_state = api.search_read_erp('account.invoice', [('id', '=', self.erpid)], ['state'])
+        if invoice_state[0]['state'] != self.state:  # draft, open, paid, cancel
+            self.state = invoice_state[0]['state']
+
+        if 'state' in kwargs:
+            self.state = kwargs['state']
+            kwargs.pop('state')
+
         if not self.pk:  # overwrite the create() method
             super(Invoice, self).save(*args, **kwargs)
         else:  # overwrite the save() method
-            if 'state' in kwargs:
-                self.state = kwargs['state']
-                # if the downpay is paid - call the function to make subscriptions
-                if kwargs['state'] == 'paid' and not self.crm.subs_erpid:
-                    self.crm.action_downpay_paid()
-                kwargs.pop('state')
+            if self.state == 'paid' and not self.crm.subs_erpid:
+                self.crm.action_downpay_paid()
+
+
+            # if 'state' in kwargs:
+            #     self.state = kwargs['state']
+            #     # if the downpay is paid - call the function to make subscriptions
+            #     if kwargs['state'] == 'paid' and not self.crm.subs_erpid:
+            #         self.crm.action_downpay_paid()
+            #     kwargs.pop('state')
             super(Invoice, self).save(*args, **kwargs)
+
+    def action_invoice_open(self):  # 'action_invoice_create' in kwargs:
+        api.function_erp('account.invoice', 'action_invoice_open', [self.invoice_set.all()[0].erpid],
+                         kwarg_dict={'context': {'active_ids': [self.invoice_set.all()[0].erpid]}})
+        self.save(state='open')
+        # self.crm.save(state='normal')
 
 
 #https://www.odoo.com/documentation/user/9.0/inventory/settings/products/variants.html
