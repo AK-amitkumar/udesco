@@ -44,7 +44,7 @@ app.autodiscover_tasks()
 def periodic_tasks(sender, **kwargs):
     # Calls get_newly_generated_draft_invoices
     # the .s syntax http://docs.celeryproject.org/en/latest/reference/celery.html#celery.signature
-    sender.add_periodic_task(5.0, get_newly_generated_draft_invoices.s(1), name='get_newly_generated_draft_invoices')
+    sender.add_periodic_task(5.0, update_newly_generated_draft_invoices.s(1), name='get_newly_generated_draft_invoices')
 
 
     # Calls update_organization_data
@@ -68,24 +68,8 @@ def periodic_tasks(sender, **kwargs):
 
 
 @app.task
-def get_newly_generated_draft_invoices(args):
-    log.info('Celery Scheduled Invoivce Check')
-    from shop.models import CRM, Invoice
-    from bridge import api
-    read_dict_list = api.search_read_erp('account.invoice', [('state','=','draft')],['id','origin'])
-    log.info('# of draft invoices = %s'%len(read_dict_list))
-    for read_dict in read_dict_list:
-        log.info(read_dict)
-        crm_ids = api.search_erp('sale.order', [('name', '=', read_dict['origin'])])
-        log.info('SO = %s'%read_dict['origin'])
-        if crm_ids:
-            # todo only create new draft invoice if customer has paid last invoice
-            log.info('Creating Invoice')
-            new_draft_invoice, cr = Invoice.objects.get_or_create(erpid=read_dict['id'], crm_id=crm_ids[0])
-            log.info('call action_invoice_open() on invoice %s'%new_draft_invoice.id)
-            # todo OR MAYBE only post invoice if customer has paid last invoice
-            #post invoice and apply payments
-            new_draft_invoice.action_invoice_open()
+def update_newly_generated_draft_invoices(args):
+    demo.get_newly_generated_draft_invoices()
     return True
 
 

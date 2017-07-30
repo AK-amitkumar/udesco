@@ -142,7 +142,7 @@ class AccountInvoice(models.Model):
                 self.has_outstanding = True
 
     @api.multi
-    def _get_outstanding_account_move_lines(self):
+    def get_outstanding_account_move_lines(self):
         aml_ids=[]
         if self.state == 'open':
             domain = [('account_id', '=', self.account_id.id), ('partner_id', '=', self.env['res.partner']._find_accounting_partner(self.partner_id).id), ('reconciled', '=', False), ('amount_residual', '!=', 0.0)]
@@ -173,7 +173,7 @@ class AccountInvoice(models.Model):
                     #     'position': currency_id.position,
                     #     'digits': [69, self.currency_id.decimal_places],
                     # })
-                info['title'] = type_payment
+                #info['title'] = type_payment
                 # self.outstanding_credits_debits_widget = json.dumps(info)
                 # self.has_outstanding = True
             return aml_ids

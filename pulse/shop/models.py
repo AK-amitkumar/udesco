@@ -220,6 +220,7 @@ class CRM(models.Model):
     state = models.CharField(max_length=200, choices = PAYMENT_STATE, default = 'draft')
     crm_products = models.ManyToManyField('Product', through='CRMProduct', null=True, blank=True)
     payg = models.NullBooleanField(null=True, blank=True)  # is it a PAYG payment model - inherits from shop
+    switch_off_date = models.DateTimeField(null=True, blank=True)
     def __unicode__(self):  # __str__ on Python 3
         return str(self.erpid)
     # def action_confirm(self):
@@ -344,14 +345,14 @@ class Invoice(models.Model):
 
         # made similar function _get_outstanding_account_move_lines to get the outstanding aml_ids
         log.info('Try and get amls')
-        aml_ids = api.function_erp('account.invoice', '_get_outstanding_account_move_lines', [self.erpid])
+        aml_ids = api.function_erp('account.invoice', 'get_outstanding_account_move_lines', [self.erpid])
         log.info('GOT amls %s'%str(aml_ids))
         for aml_id in aml_ids:
-            if 1: #self.state == 'open': #todo maybe here
+            if self.state == 'open':
                 api.function_erp('account.invoice', 'assign_outstanding_credit', [self.erpid, aml_id],
                              kwarg_dict={'context': {'active_ids': [self.erpid]}})
-            #self.save() #todo - maybe here
-        self.save() #set invoice to post
+                self.save()
+        self.save() #saving will update the invoice to paid - if the aml (outstanding credit) makes it paid
 
 
 # [2017-07-29 22:33:46,648: DEBUG/MainProcess] Task accepted: pulse.celery.invoice_check[77ade3fc-1c13-45e9-8784-c7ce8ecfa996] pid:20376

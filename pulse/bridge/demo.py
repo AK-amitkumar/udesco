@@ -32,7 +32,7 @@ UID = api.auth_erp()
 
 
 def make_demo_function():
-    get_products()
+    get_newly_generated_draft_invoices()
     # print 'ERP res_country --> Django Country'
     # get_countries()
     # print 'ERP res_partner --> Django Company (erpid of res_partner id)'
@@ -54,7 +54,7 @@ def make_demo_function():
 
 
 def make_shops(comp):
-    for i in range(3):
+    for i in range(2):#2 shops per company
         shop, c = Shop.objects.get_or_create(name=fake.company(), company=comp, country=comp.country,
                                           email=fake.email(), phone=fake.phone_number(),
                                           street=fake.street_address(),  # street2=fake.email(),
@@ -271,6 +271,29 @@ def get_suppliers():
                                                       street=v['street'],
                                                       zip=v['zip'], city=v['city'])
     return True
+
+
+
+def get_newly_generated_draft_invoices():  # 'action_invoice_create' in kwargs:
+    log.info('Celery Scheduled Invoivce Check')
+
+    read_dict_list = api.search_read_erp('account.invoice', [('state','=','draft')],['id','origin'])
+    log.info('# of draft invoices = %s'%len(read_dict_list))
+    for read_dict in read_dict_list:
+        log.info(read_dict)
+        sale_order_ids = api.search_erp('sale.order', [('name', '=', read_dict['origin'])])
+        log.info('SO = %s'%read_dict['origin'])
+        if sale_order_ids:
+            crm = CRM.objects.get(erpid = sale_order_ids[0])
+            # todo only create new draft invoice if customer has paid last invoice
+            log.info('Creating Invoice')
+            new_draft_invoice, cr = Invoice.objects.get_or_create(erpid=read_dict['id'], crm=crm)
+            log.info('call action_invoice_open() on invoice %s'%new_draft_invoice.id)
+            # todo OR MAYBE only post invoice if customer has paid last invoice
+            #post invoice and apply payments
+            new_draft_invoice.action_invoice_open()
+    return True
+
                 #dir(fake)
 
 # ['_Generator__config', '_Generator__format_token', '__class__', '__delattr__', '__dict__',
