@@ -86,6 +86,7 @@ class MMPayment(models.Model):
             # 1. create an account.payment
             erpid = api.create_erp('account.payment', fields_dict)
             if erpid:
+                #2 . post account.payment
                 #the actual post method returns None
                 #but the xmlrpc_return function in wsgi_server.py expects a return
                 #>>> e  TypeError('cannot marshal None unless allow_none is enabled',)
@@ -100,7 +101,15 @@ class MMPayment(models.Model):
                 self.erpid = erpid
                 super(MMPayment, self).save(*args, **kwargs)
 
-                #the following updates pulse side invoice state with erp invoice state
+                #3. apply on time if payg customer
+                if self.invoice.crm.payg:
+                    #todo - make an invoice or crm.amount
+                    invoice_amount = 2000.
+                    daily_rate = invoice_amount * (12/365.)   #($/mo)(12 mo/1 yr)/(365 d / 1y)
+                    on_time = amount/daily_rate
+                    self.invoice.crm.switch_off_date = self.invoice.crm.switch_off_date + datetime.timedelta(days = on_time)
+
+                #4. the following updates pulse side invoice state with erp invoice state
                 self.invoice.save()
         else:  # overwrite the save() method
             # todo - probably do not want this type of thing - probably want functions that corresponds to unlink, cancel etc. methods on accoount.invoice
