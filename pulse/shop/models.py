@@ -219,7 +219,7 @@ class CRM(models.Model):
     customer = models.ForeignKey('Customer')
     state = models.CharField(max_length=200, choices = PAYMENT_STATE, default = 'draft')
     crm_products = models.ManyToManyField('Product', through='CRMProduct', null=True, blank=True)
-    payg = models.NullBooleanField(null=True, blank=True)  # is it a PAYG payment model - inherits from shop
+    payg = models.NullBooleanField(null=True, blank=True, default=True)  # is it a PAYG payment model - inherits from shop
     switch_off_date = models.DateTimeField(null=True, blank=True)
     def __unicode__(self):  # __str__ on Python 3
         return str(self.erpid)

@@ -44,7 +44,7 @@ app.autodiscover_tasks()
 def periodic_tasks(sender, **kwargs):
     # Calls get_newly_generated_draft_invoices
     # the .s syntax http://docs.celeryproject.org/en/latest/reference/celery.html#celery.signature
-    sender.add_periodic_task(5.0, update_newly_generated_draft_invoices.s(1), name='get_newly_generated_draft_invoices')
+    sender.add_periodic_task(5.0, update_newly_generated_draft_invoices.s(1), name='update_newly_generated_draft_invoices')
 
 
     # Calls update_organization_data
@@ -69,6 +69,7 @@ def periodic_tasks(sender, **kwargs):
 
 @app.task
 def update_newly_generated_draft_invoices(args):
+    from bridge import demo
     demo.get_newly_generated_draft_invoices()
     return True
 

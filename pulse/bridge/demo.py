@@ -32,25 +32,25 @@ UID = api.auth_erp()
 
 
 def make_demo_function():
-    get_newly_generated_draft_invoices()
-    # print 'ERP res_country --> Django Country'
-    # get_countries()
-    # print 'ERP res_partner --> Django Company (erpid of res_partner id)'
-    # comp_list = get_companies()
-    # print 'DJANGO Shop'
-    # for comp in comp_list:
-    #     make_shops(comp)
-    # print 'SANITY CHECK'
-    # get_customers()
-    # print 'ERP product_template --> Django Product (erpid of product_template id)'
-    # get_products()
-    # print 'Django CRMProduct --> ERP sales_order'
-    # make_crm_products()
-    # print 'Creating Django MM Provider'
-    # make_mm_provider()
-    # print 'Invoice all customers in third shop'
-    # make_invoices()
-    # return True
+
+    print 'ERP res_country --> Django Country'
+    get_countries()
+    print 'ERP res_partner --> Django Company (erpid of res_partner id)'
+    comp_list = get_companies()
+    print 'DJANGO Shop'
+    for comp in comp_list:
+        make_shops(comp)
+    print 'SANITY CHECK'
+    get_customers()
+    print 'ERP product_template --> Django Product (erpid of product_template id)'
+    get_products()
+    print 'Django CRMProduct --> ERP sales_order'
+    make_crm_products()
+    print 'Creating Django MM Provider'
+    make_mm_provider()
+    print 'Invoice all customers in third shop'
+    make_invoices()
+    return True
 
 
 def make_shops(comp):
@@ -285,13 +285,21 @@ def get_newly_generated_draft_invoices():  # 'action_invoice_create' in kwargs:
         log.info('SO = %s'%read_dict['origin'])
         if sale_order_ids:
             crm = CRM.objects.get(erpid = sale_order_ids[0])
+            if crm.invoice_set.filter(state='open'):
+                #if there is already and open invoice, do not open a new one
+                #and if they are not payg, set them late
+                if crm.payg != True:
+                    crm.state = 'late'
+                    crm.switch_off_date = datetime.datetime.utcnow()
+                    crm.save()
             # todo only create new draft invoice if customer has paid last invoice
-            log.info('Creating Invoice')
-            new_draft_invoice, cr = Invoice.objects.get_or_create(erpid=read_dict['id'], crm=crm)
-            log.info('call action_invoice_open() on invoice %s'%new_draft_invoice.id)
-            # todo OR MAYBE only post invoice if customer has paid last invoice
-            #post invoice and apply payments
-            new_draft_invoice.action_invoice_open()
+            else:
+                log.info('Creating Invoice')
+                new_draft_invoice, cr = Invoice.objects.get_or_create(erpid=read_dict['id'], crm=crm)
+                log.info('call action_invoice_open() on invoice %s'%new_draft_invoice.id)
+                # todo OR MAYBE only post invoice if customer has paid last invoice
+                #post invoice and apply payments
+                new_draft_invoice.action_invoice_open()
     return True
 
                 #dir(fake)
