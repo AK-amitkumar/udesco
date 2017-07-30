@@ -6,10 +6,10 @@ import datetime
 
 #for signals
 #https://docs.djangoproject.com/en/1.11/ref/signals/#django.db.models.signals.pre_save
+
 from django.db.models.signals import *
 from django.dispatch import receiver
-import logging
-log = logging.getLogger(__name__)
+
 #model signals
     # pre_init
     # post_init
@@ -28,6 +28,9 @@ log = logging.getLogger(__name__)
     # got_request_exception
 
 
+import logging
+log = logging.getLogger(__name__)
+
 
 from bridge import api
 
@@ -38,12 +41,32 @@ UID = api.auth_erp()
 # Create your models here.
 class Country(models.Model):
     # res_country  in ERP
+    erpid = models.IntegerField(null=True, blank=True)
     code = models.CharField(max_length=200, unique=True)
     name = models.CharField(max_length=200, unique=True)
     # in ERP many other fields, like currency_id
     def __unicode__(self):              # __str__ on Python 3
         return self.code
 
+    def save(self, *args, **kwargs):
+        fields_dict = {}
+        for field in self._meta.get_fields():
+            # do not write 'id' or foreign key fields to ERP
+            if not field.is_relation and field.name != 'id':
+                # cannot write None to the ERP fields
+                if getattr(self, field.name):
+                    fields_dict[field.name] = getattr(self, field.name) # if field.name != 'phone' else ''.join(c for c in getattr(self, field.name) if c.isdigit())
+        #self.phone=''.join(c for c in getattr(self, 'phone') if c.isdigit())
+        #fields_dict['name'] = fields_dict.get('first', '') + ' ' + fields_dict.get('last', '')
+        if not self.pk:  # overwrite the create() method
+            erpid, created = api.get_or_create_erp('res.country', fields_dict)
+            # don't save if no erpid is returned
+            if erpid:
+                self.erpid = erpid
+                super(Country, self).save(*args, **kwargs)
+        else:  # overwrite the save() method
+            api.write_erp('res.country', [self.erpid], fields_dict)
+            super(Country, self).save(*args, **kwargs)
 
 class Company(models.Model):
     # res_company/res_partner  in ERP
@@ -52,7 +75,27 @@ class Company(models.Model):
     country = models.ForeignKey('Country')
     def __unicode__(self):              # __str__ on Python 3
         return self.name
-
+    
+    def save(self, *args, **kwargs):
+        fields_dict = {}
+        for field in self._meta.get_fields():
+            # do not write 'id' or foreign key fields to ERP
+            if not field.is_relation and field.name != 'id':
+                # cannot write None to the ERP fields
+                if getattr(self, field.name):
+                    fields_dict[field.name] = getattr(self, field.name) if field.name != 'phone' else ''.join(c for c in getattr(self, field.name) if getattr(self, field.name) and c.isdigit())
+        #self.phone=''.join(c for c in getattr(self, 'phone') if c.isdigit())
+        #fields_dict['name'] = fields_dict.get('first', '') + ' ' + fields_dict.get('last', '')
+        if not self.pk:  # overwrite the create() method
+            fields_dict['is_company'] = True
+            erpid, created = api.get_or_create_erp('res.partner', fields_dict)
+            # don't save if no erpid is returned
+            if erpid:
+                self.erpid = erpid
+                super(Company, self).save(*args, **kwargs)
+        else:  # overwrite the save() method
+            api.write_erp('res.partner', [self.erpid], fields_dict)
+            super(Company, self).save(*args, **kwargs)  # Call the "real" save() method.
 
 
 
@@ -75,8 +118,9 @@ class Shop(models.Model):
 class Customer(models.Model):
     # res_partner of crm = True  // alternative is supplier = True
     erpid = models.IntegerField(null=True, blank=True) #Unique CustomerId
-    first = models.CharField(max_length=200, null=True, blank=True)  # first
-    last = models.CharField(max_length=200, null=True, blank=True)  # last
+    # first = models.CharField(max_length=200, null=True, blank=True)  # first
+    # last = models.CharField(max_length=200, null=True, blank=True)  # last
+    name = models.CharField(max_length=200, null=True, blank=True)
     city = models.CharField(max_length=200)
     street = models.CharField(max_length=200)
     street2 = models.CharField(max_length=200, null=True, blank=True)
@@ -86,22 +130,22 @@ class Customer(models.Model):
     email = models.EmailField(null=True, blank=True)
     phone = models.CharField(max_length=200, null=True, blank=True)
     def __unicode__(self):  # __str__ on Python 3
-        return self.first+' '+self.last
+        return self.name
 
     def save(self, *args, **kwargs):
         fields_dict = {}
-        # fields = api.inspect_erp('res.partner')
         for field in self._meta.get_fields():
             # do not write 'id' or foreign key fields to ERP
             if not field.is_relation and field.name != 'id':
                 # cannot write None to the ERP fields
                 if getattr(self, field.name):
-                    fields_dict[field.name] = getattr(self, field.name) if field.name != 'phone' else ''.join(c for c in getattr(self, field.name) if c.isdigit())
-        self.phone=''.join(c for c in getattr(self, 'phone') if c.isdigit())
-        fields_dict['name'] = fields_dict.get('first', '') + ' ' + fields_dict.get('last', '')
+                    fields_dict[field.name] = getattr(self, field.name) if field.name != 'phone' else ''.join(c for c in getattr(self, field.name) if getattr(self, 'phone') != False and c.isdigit())
+        if getattr(self, 'phone'):
+            self.phone=''.join(c for c in getattr(self, 'phone') if getattr(self, 'phone') != False and c.isdigit())
+        #fields_dict['name'] = fields_dict.get('first', '') + ' ' + fields_dict.get('last', '')
         if not self.pk:  # overwrite the create() method
             fields_dict['customer'] = True
-            erpid = api.create_erp('res.partner', fields_dict)
+            erpid, created = api.get_or_create_erp('res.partner', fields_dict)
             # don't save if no erpid is returned
             if erpid:
                 self.erpid = erpid
@@ -125,6 +169,30 @@ class Supplier(models.Model):
 
     def __unicode__(self):  # __str__ on Python 3
         return self.name
+
+    def save(self, *args, **kwargs):
+        fields_dict = {}
+        for field in self._meta.get_fields():
+            # do not write 'id' or foreign key fields to ERP
+            if not field.is_relation and field.name != 'id':
+                # cannot write None to the ERP fields
+                if getattr(self, field.name):
+                    fields_dict[field.name] = getattr(self, field.name) if field.name != 'phone' else ''.join(
+                        c for c in getattr(self, field.name) if getattr(self, 'phone') != False and c.isdigit())
+        if getattr(self, 'phone'):
+            self.phone = ''.join(
+                c for c in getattr(self, 'phone') if getattr(self, 'phone') != False and c.isdigit())
+        #fields_dict['name'] = fields_dict.get('first', '') + ' ' + fields_dict.get('last', '')
+        if not self.pk:  # overwrite the create() method
+            fields_dict['supplier'] = True
+            erpid, created = api.get_or_create_erp('res.partner', fields_dict)
+            # don't save if no erpid is returned
+            if erpid:
+                self.erpid = erpid
+                super(Supplier, self).save(*args, **kwargs)
+        else:  # overwrite the save() method
+            api.write_erp('res.partner', [self.erpid], fields_dict)
+            super(Supplier, self).save(*args, **kwargs)  # Call the "real" save() method.
 
 
 
@@ -195,7 +263,7 @@ class CRM(models.Model):
         if invoice_ids:
             # #todo create a subscription for that invoice    -    invoice_ids[0]
             # subscription_dict={'name':'recurring_invoice_%s'%invoice_ids[0],'user_id':1,'active':True,'interval_number':1,'interval_type':'months'}
-            # subs_erpid = api.get_or_create_erp('subscription.subscription', subscription_dict)
+            # subs_erpid, created = api.get_or_create_erp('subscription.subscription', subscription_dict)
             # if subs_erpid:
             #     Invoice.objects.get_or_create(erpid=invoice_ids[0],crm=self.id)
             #     self.save(subs_erpid=subs_erpid,state='downpay')
@@ -229,7 +297,7 @@ class CRM(models.Model):
         log.info('Downpay Found - id is %s'%downpay_id)
         #todo create a subscription for that invoice    -    invoice_ids[0]
         subscription_dict={'doc_source':'account.invoice,%d'%downpay_id,'name':'recurring_invoice_%s'%downpay_id,'user_id':1,'active':True,'interval_number':1,'interval_type':'months'}
-        subs_erpid = api.get_or_create_erp('subscription.subscription', subscription_dict)
+        subs_erpid, created = api.get_or_create_erp('subscription.subscription', subscription_dict)
         if subs_erpid:
             self.save(subs_erpid=subs_erpid,state='normal')
 
@@ -263,14 +331,6 @@ class Invoice(models.Model):
         else:  # overwrite the save() method
             if self.state == 'paid' and not self.crm.subs_erpid:
                 self.crm.action_downpay_paid()
-
-
-            # if 'state' in kwargs:
-            #     self.state = kwargs['state']
-            #     # if the downpay is paid - call the function to make subscriptions
-            #     if kwargs['state'] == 'paid' and not self.crm.subs_erpid:
-            #         self.crm.action_downpay_paid()
-            #     kwargs.pop('state')
             super(Invoice, self).save(*args, **kwargs)
 
 
@@ -281,10 +341,6 @@ class Invoice(models.Model):
                          kwarg_dict={'context': {'active_ids': [self.erpid]}})
         self.save(state='open')
 
-        #todo test this next bit
-        # assign_outstanding_credit (if they overpaid on last invoice)
-        # logic to how to gt aml can be found here (how they get line)
-        # self.outstanding_credits_debits_widget = json.dumps(False)
 
         # made similar function _get_outstanding_account_move_lines to get the outstanding aml_ids
         log.info('Try and get amls')
@@ -294,7 +350,7 @@ class Invoice(models.Model):
             if 1: #self.state == 'open': #todo maybe here
                 api.function_erp('account.invoice', 'assign_outstanding_credit', [self.erpid, aml_id],
                              kwarg_dict={'context': {'active_ids': [self.erpid]}})
-            #self.save() #todo - aybe here
+            #self.save() #todo - maybe here
         self.save() #set invoice to post
 
 
@@ -368,18 +424,18 @@ class Product(models.Model):
                 if getattr(self, field.name):
                     fields_dict[field.name] = getattr(self, field.name)
         if not self.pk:  # overwrite the create() method
-            template_erpid = api.get_or_create_erp('product.template', fields_dict)
+            template_erpid, created = api.get_or_create_erp('product.template', fields_dict)
             # don't save if no erpid is returned
             if template_erpid:
                 fields_dict['product_tmpl_id'] = template_erpid
                 self.template_erpid = template_erpid
-                product_erpid = api.get_or_create_erp('product.product', fields_dict)
+                product_erpid, created = api.get_or_create_erp('product.product', fields_dict)
                 if product_erpid:
                     self.product_erpid = product_erpid
                     super(Product, self).save(*args, **kwargs)
         else:  # overwrite the save() method
-            api.write_erp('product.template', [self.template_erpid], fields_dict)
-            api.write_erp('product.product', [self.product_erpid], fields_dict)
+            api.write_erp('product.template', [self.template_erpid], fields_dict)#{k:v for k,v in fields_dict.iteritems() if k in ['list_price','default_code','type']})
+            api.write_erp('product.product', [self.product_erpid], {k:v for k,v in fields_dict.iteritems() if k in ['default_code']})
             super(Product, self).save(*args, **kwargs)  # Call the "real" save() method.
 
     def get_qty_remaining(self,*args,**kwargs):
@@ -443,22 +499,19 @@ class CRMProduct(models.Model):
         super(CRMProduct, self).delete(*args, **kwargs)
 
     def return_product_choices(self):
-        #((k, k) for k in choices_list)
-        return [(self.id, self.product.name),]#{'id': self.id, 'label': self.product.name, 'value': self.product.name}
+        return [(self.id, self.product.name),]
 
     def save(self, *args, **kwargs):
         fields_dict = {}
         for field in self._meta.get_fields():
             # do not write 'id' or foreign key fields to ERP
             if not field.is_relation and field.name != 'id':
-                # cannot write None to the ERP fields
                 if getattr(self, field.name):
                     fields_dict[field.name] = getattr(self, field.name)
                 fields_dict['product_uom_qty'] = self.qty if self.qty else 1
                 #fields_dict['price_unit'] = self.price_unit
                 fields_dict['order_id'] = self.crm.erpid
                 fields_dict['product_id'] = self.product.product_erpid
-                #todo self.product.erpid is the id of the product_template, BUT 'product_id' is a link to product.product model
         if not self.pk:  # overwrite the create() method
             print 'CRMP created'
             erpid = api.create_erp('sale.order.line', fields_dict)
@@ -472,85 +525,4 @@ class CRMProduct(models.Model):
             super(CRMProduct, self).save(*args, **kwargs)  # Call the "real" save() method.
 
 
-
-
-
-
-
-
-
-# class Employee(models.Model):
-#     # hr_employee/res_partner
-#     # in ERP hr_employee.adress_id is a many2one to res_partner
-#     name = models.CharField(max_length=200)
-#     shop = models.ForeignKey('Shop')
-# 
-#     def __unicode__(self):  # __str__ on Python 3
-#         return self.name
-
-# INVOICE_STATES = (
-#     ('draft', 'draft'),
-#     ('proforma', 'proforma'),
-#     ('proforma2', 'proforma2'),
-#     ('open', 'open'),
-#     ('paid', 'paid'),
-#     ('cancel', 'cancel'),
-# )
-#
-
-#
-# #This should probably be a many to many field with Product and Invoice
-# class InvoiceLine(models.Model):
-#     # account_invoice_line
-#     product = models.ForeignKey('Product', on_delete=models.CASCADE) #corresponds to product_product
-#     invoice = models.ForeignKey('Invoice', on_delete=models.CASCADE)
-#     #account_id - income or expense account
-#     qty = models.FloatField()
-#     #price = models.FloatField()
-#     #tax set in ERP
-#     #amount - calculated from qty, price and tax - in ERP
-#     #serial_number = models.CharField(max_length=200)
-#     #imei = models.CharField(max_length=200)
-
-
-#
-#
-#     AutoField
-#     BigAutoField
-#     BigIntegerField
-#     BinaryField
-#     BooleanField
-#     CharField
-#     CommaSeparatedIntegerField
-#     DateField
-#     DateTimeField
-#     DecimalField
-#     DurationField
-#     EmailField
-#     FileField
-#         FileField and FieldFile
-#     FilePathField
-#     FloatField
-#     ImageField
-#     IntegerField
-#     GenericIPAddressField
-#     NullBooleanField
-#     PositiveIntegerField
-#     PositiveSmallIntegerField
-#     SlugField
-#     SmallIntegerField
-#     TextField
-#     TimeField
-#     URLField
-#     UUIDField
-#
-# Relationship fields
-#
-#     ForeignKey
-#         Database Representation
-#         Arguments
-#     ManyToManyField
-#         Database Representation
-#         Arguments
-#     OneToOneField
 

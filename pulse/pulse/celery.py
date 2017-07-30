@@ -42,9 +42,22 @@ app.autodiscover_tasks()
 
 @app.on_after_configure.connect
 def periodic_tasks(sender, **kwargs):
-    # Calls test('hello') every 10 seconds.
+    # Calls get_newly_generated_draft_invoices
     # the .s syntax http://docs.celeryproject.org/en/latest/reference/celery.html#celery.signature
-    sender.add_periodic_task(5.0, invoice_check.s(1), name='5 Second Invoice Check')
+    sender.add_periodic_task(5.0, get_newly_generated_draft_invoices.s(1), name='get_newly_generated_draft_invoices')
+
+
+    # Calls update_organization_data
+    sender.add_periodic_task(10.0, update_organization_data.s(1), name='update_organization_data')
+
+
+    # Calls update_product_data
+    sender.add_periodic_task(8.0, update_product_data.s(1), name='update_product_data')
+
+    # Calls update_customer_data
+    sender.add_periodic_task(20.0, update_customer_data.s(1), name='update_customer_data')
+
+
 
 
     # # Executes every Monday morning at 7:30 a.m.
@@ -55,7 +68,7 @@ def periodic_tasks(sender, **kwargs):
 
 
 @app.task
-def invoice_check(args):
+def get_newly_generated_draft_invoices(args):
     log.info('Celery Scheduled Invoivce Check')
     from shop.models import CRM, Invoice
     from bridge import api
@@ -74,6 +87,40 @@ def invoice_check(args):
             #post invoice and apply payments
             new_draft_invoice.action_invoice_open()
     return True
+
+
+@app.task
+def update_organization_data(args):
+    log.info('Celery Scheduled Update Organization')
+
+    from bridge import demo
+    demo.get_countries()
+    demo.get_companies()
+    demo.get_suppliers()
+
+    return True
+
+
+@app.task
+def update_product_data(args):
+    log.info('Celery Scheduled Update Products')
+
+    from bridge import demo
+    demo.get_products()
+
+    return True
+
+
+@app.task
+def update_customer_data(args):
+    log.info('Celery Scheduled Update Customers')
+
+    from bridge import demo
+    demo.get_customers()
+
+    return True
+
+
 #
 # [2017-07-29 22:09:38,248: INFO/ForkPoolWorker-3] Celery Scheduled Invoivce Check
 # [2017-07-29 22:09:38,271: INFO/ForkPoolWorker-3] # of draft invoices = 2

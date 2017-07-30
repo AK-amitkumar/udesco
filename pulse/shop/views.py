@@ -77,7 +77,7 @@ def crm(request, crm_id=None):
     if crm_id:
         crm = CRM.objects.get(pk=crm_id)
         title = '%s'%(crm.erpid)
-        sub_title = '%s %s - state: %s'%(crm.customer.first,crm.customer.last, crm.get_state_display())
+        sub_title = '%s - state: %s'%(crm.customer.name, crm.get_state_display())
 
         #for the formset
         #for populating the formset
@@ -220,10 +220,7 @@ class CRMListJson(BaseDatatableView):
 
     def render_column(self, row, column):
         # We want to render user as a custom column
-        if column == 'name':
-            return '{0} {1}'.format(row.first, row.last)
-        else:
-            return super(CRMListJson, self).render_column(row, column)
+        return super(CRMListJson, self).render_column(row, column)
 
     def filter_queryset(self, qs):
         # use parameters passed in GET request to filter queryset
@@ -288,7 +285,7 @@ class CRMListJson(BaseDatatableView):
             else: #if shop_id:
                 json_data.append([
                     "<a href='/shop/crm/%s/'>%s</a>" % (item.id, item.erpid),
-                    "<a href='/shop/customer/%s/'>%s</a>" % (item.customer.id,'{0} {1}'.format(item.customer.first, item.customer.last)),
+                    "<a href='/shop/customer/%s/'>%s</a>" % (item.customer.id,item.customer.name),
                     item.customer.phone,
                     item.customer.email,
                     item.state,

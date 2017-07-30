@@ -32,76 +32,44 @@ UID = api.auth_erp()
 
 
 def make_demo_function():
+    get_products()
     # print 'ERP res_country --> Django Country'
     # get_countries()
     # print 'ERP res_partner --> Django Company (erpid of res_partner id)'
-    # comp, country = get_company()
+    # comp_list = get_companies()
     # print 'DJANGO Shop'
-    # make_shops(comp, country)
+    # for comp in comp_list:
+    #     make_shops(comp)
+    # print 'SANITY CHECK'
+    # get_customers()
     # print 'ERP product_template --> Django Product (erpid of product_template id)'
     # get_products()
     # print 'Django CRMProduct --> ERP sales_order'
     # make_crm_products()
-    # print 'Creating MM Provider'
+    # print 'Creating Django MM Provider'
     # make_mm_provider()
-    print 'Invoice all customers in third shop'
-    make_invoices()
-    return True
+    # print 'Invoice all customers in third shop'
+    # make_invoices()
+    # return True
 
 
-
-def get_countries():
-    #get countries from res_country table
-    vals = api.search_read_erp('res.country', [], ['name','code'])
-    for v in vals:
-        p, c = Country.objects.get_or_create(code=v['code'], name=v['name'])
-
-
-def get_company():
-    #get company from res_company table
-
-    #link Pulse company to Pulse country depending on what link is in ERP
-    vals = api.search_read_erp('res.partner', [], ['name', 'company_id', 'country_id', 'email', 'phone',
-                                               'street', 'street2', 'city', 'zip', 'is_company',
-                                               'supplier', 'customer' ])
-    for v in vals:
-        if v.get('is_company'):
-            try:
-                country=None
-                if v.get('country_id'):
-                    country_name =  v.get('country_id')[1]
-                    res = Country.objects.filter(name=country_name)#__icontains=str(country_name))
-                    if len(res)>0:
-                        country = res[0]
-                    else:
-                        country = Country.objects.get(id=5)
-                comp, c = Company.objects.get_or_create(erpid=v['id'],name=v['name'], country=country)
-                return comp, country
-            except Exception as e:
-                print e
-        else:
-            continue
-    raise Exception('Could not get a company res_partner from odoo - make one first')
-
-
-
-def make_shops(comp, country):
+def make_shops(comp):
     for i in range(3):
-        shop, c = Shop.objects.get_or_create(name=fake.company(), company=comp, country=country,
+        shop, c = Shop.objects.get_or_create(name=fake.company(), company=comp, country=comp.country,
                                           email=fake.email(), phone=fake.phone_number(),
                                           street=fake.street_address(),  # street2=fake.email(),
                                           zip=fake.zipcode(), city=fake.city())
         print 'Django Customer --> ERP res_partner (customer = True)'
         print 'Django CRM --> ERP sales_order (draft) (erpid of sales_order id)'
-        make_customers(country,shop, comp)
+        make_customers(shop)
 
 
-def make_customers(country,shop, comp):
+def make_customers(shop):
     for j in range(50):
         try:
             erpid = fake.random_int()*fake.random_int()/fake.random_int()
-            cust, cr = Customer.objects.get_or_create(erpid=erpid,first=fake.first_name(),last=fake.last_name(),#company = comp,
-                            email=fake.email(), phone = fake.phone_number(),country=country,
+            cust, cr = Customer.objects.get_or_create(erpid=erpid,name=fake.first_name()+' '+fake.last_name(),#company = comp,
+                            email=fake.email(), phone = fake.phone_number(),country=shop.country,
                             street=fake.street_address(),#street2=fake.email(),
                             zip=fake.zipcode(),city=fake.city())
             CRM.objects.get_or_create(erpid=erpid,customer=cust,shop=shop)
@@ -109,35 +77,6 @@ def make_customers(country,shop, comp):
             print e
     return None
 
-
-
-def get_products():
-    # get some product definitions from ERP
-    #type = consu, service, product (Consumable aka don't manage Inventory, Service non-physical, Stockable Product aka manage stock
-    #IF DO NOT EXIST IN ERP - CREATE IN DJANGO --> model create method will create in ERP
-    if not api.search_erp('product.template', []):#('type', 'in', ['consu', 'product'])]):
-        pass
-        # print 'NO PRODUCTS DEFINED, creating 10 random ones'
-        # for i in range(10):
-        #     rando = randint(0, 3)
-        #     create_dict = {'default_code':fake.uuid4(),'name':fake.word(),'list_price':fake.random_int()}
-        #     if rando == 1:
-        #         create_dict['type'] = 'consu'
-        #     elif rando == 2:
-        #         create_dict['type'] = 'product'
-        #     else:
-        #         create_dict['type'] = 'service'
-        #     prod, c = Product.objects.get_or_create(**create_dict)
-    else: #ELSE READ data from ERP and get_or_create
-        # If the product's invoice policy is deliver, then you cannot invoice the quotation (not until delivery) - for demo I want to invoice on order
-        vals = api.search_read_erp('product.template', [('invoice_policy','=','order'),('type','in',['consu','product'])], ['name', 'default_code', 'list_price','type' ])
-        for v in vals:
-            #print v
-            #erpid=v['id'] set in save method
-            prod, c = Product.objects.get_or_create(name=v['name'],
-                                                    default_code=v['default_code'],list_price=v['list_price']
-                                                    ,type=v['type'])
-    return None
 
 
 def make_crm_products():
@@ -180,7 +119,159 @@ def make_invoices():
 
 
 
-#dir(fake)
+
+''' 
+ ____ ___            .___       __           ___________                   __  .__                      
+|    |   \______   __| _/____ _/  |_  ____   \_   _____/_ __  ____   _____/  |_|__| ____   ____   ______
+|    |   /\____ \ / __ |\__  \\   __\/ __ \   |    __)|  |  \/    \_/ ___\   __\  |/  _ \ /    \ /  ___/
+|    |  / |  |_> > /_/ | / __ \|  | \  ___/   |     \ |  |  /   |  \  \___|  | |  (  <_> )   |  \\___ \ 
+|______/  |   __/\____ |(____  /__|  \___  >  \___  / |____/|___|  /\___  >__| |__|\____/|___|  /____  >
+          |__|        \/     \/          \/       \/             \/     \/                    \/     \/ 
+
+Following functions grab data generated in the ERP (usually through Cron Jobs)
+'''
+
+
+def get_pulse_country_id_from_erp_related_field(erp_vals):
+    if not erp_vals['country_id']:
+        return erp_vals
+    else:
+        new_erp_vals = erp_vals.copy()
+        erpid = erp_vals['country_id'][0]
+        qs = Country.objects.filter(erpid = erpid)
+        if qs.exists():
+            new_erp_vals['country_id'] = qs[0].id
+        return new_erp_vals
+            
+            
+            
+
+def get_countries():
+    # get countries from res_country table
+    vals = api.search_read_erp('res.country', [], ['id', 'name', 'code'])
+    for v in vals:
+        # if a country is already created in pulse, then update it if ERP values have changed
+        queryset = Country.objects.filter(erpid=v['id'])
+        if queryset.exists():
+            v.pop('id')
+            for attr, value in v.iteritems():
+                setattr(queryset[0], attr, value)
+            queryset[0].save()
+
+
+        # else get_or_create in pulse
+        else:
+            p, c = Country.objects.get_or_create(code=v['code'], name=v['name'])
+
+def get_companies():
+    comp_list = []
+    # get company from res_partner table
+    vals = api.search_read_erp('res.partner', [], ['id', 'name', 'company_id', 'country_id', 'email', 'phone',
+                                               'street', 'street2', 'city', 'zip', 'is_company',
+                                               'supplier', 'customer'])
+    for ov in vals:
+        # if a company is already created in pulse, then update it if ERP values have changed
+        v = get_pulse_country_id_from_erp_related_field(ov)
+
+        queryset = Company.objects.filter(erpid=v['id'])
+        if queryset.exists():
+            v.pop('id')
+            for attr, value in v.iteritems():
+                setattr(queryset[0], attr, value)
+            queryset[0].save()
+
+        # else get_or_create in pulse
+        else:
+            if v.get('is_company'):
+                try:
+                    comp, c = Company.objects.get_or_create(erpid=v['id'], name=v['name'], country_id=v['country_id'])
+                    comp_list.append(comp)
+                except Exception as e:
+                    log.error(e)
+            else:
+                continue
+    return comp_list
+    #raise Exception('Could not get a company res_partner from odoo - make one first')
+
+def get_products():
+    # get some product definitions from product_template
+    # type = consu, service, product (Consumable aka don't manage Inventory, Service non-physical, Stockable Product aka manage stock
+    # If the product's invoice policy is deliver, then you cannot invoice the quotation (not until delivery) - for demo I want to invoice on order
+    vals = api.search_read_erp('product.template',
+                           [('invoice_policy', '=', 'order'), ('type', 'in', ['consu', 'product'])],
+                           ['name', 'default_code', 'list_price', 'type'])
+    for v in vals:
+
+        # if a product is already created in pulse, then update it if ERP values have changed
+        queryset = Product.objects.filter(template_erpid=v['id'])
+        if queryset.exists():
+            v.pop('id')
+            for attr, value in v.iteritems():
+                setattr(queryset[0], attr, value)
+            queryset[0].save()
+
+        # else get_or_create in pulse
+        else:
+            prod, c = Product.objects.get_or_create(name=v['name'],
+                                                    default_code=v['default_code'],
+                                                    list_price=v['list_price']
+                                                    , type=v['type'])
+    return True
+
+def get_customers():
+    # get some product definitions from product_template
+    # type = consu, service, product (Consumable aka don't manage Inventory, Service non-physical, Stockable Product aka manage stock
+    # If the product's invoice policy is deliver, then you cannot invoice the quotation (not until delivery) - for demo I want to invoice on order
+    vals = api.search_read_erp('res.partner',
+                           [('customer', '=', True)],
+                           ['name', 'city', 'street', 'street2', 'zip', 'country_id', 'email', 'phone'])
+    for ov in vals:
+        # if a company is already created in pulse, then update it if ERP values have changed
+        v = get_pulse_country_id_from_erp_related_field(ov)
+        queryset = Customer.objects.filter(erpid=v['id'])
+        if queryset.exists():
+            v.pop('id')
+            for attr, value in v.iteritems():
+                setattr(queryset[0], attr, value)
+            queryset[0].save()
+
+        # else get_or_create in pulse
+        else:
+            cust, cr = Customer.objects.get_or_create(erpid=v['id'], name=v['name'],
+                                                      email=v['email'], phone=v['phone'],
+                                                      country_id=v['country_id'],
+                                                      street=v['street'],
+                                                      zip=v['zip'], city=v['city'])
+    return True
+
+def get_suppliers():
+    # get some product definitions from product_template
+    # type = consu, service, product (Consumable aka don't manage Inventory, Service non-physical, Stockable Product aka manage stock
+    # If the product's invoice policy is deliver, then you cannot invoice the quotation (not until delivery) - for demo I want to invoice on order
+
+    vals = api.search_read_erp('res.partner',
+                               [('supplier', '=', True)],
+                               ['name', 'city', 'street', 'street2', 'zip', 'country_id', 'email', 'phone'])
+    for ov in vals:
+        # if a company is already created in pulse, then update it if ERP values have changed
+        v = get_pulse_country_id_from_erp_related_field(ov)
+        # if a product is already created in pulse, then update it if ERP values have changed
+        queryset = Supplier.objects.filter(erpid=v['id'])
+        if queryset.exists():
+            v.pop('id')
+            for attr, value in v.iteritems():
+                setattr(queryset[0], attr, value)
+            queryset[0].save()
+
+        # else get_or_create in pulse
+        else:
+            cust, cr = Supplier.objects.get_or_create(erpid=v['id'], name=v['name'],
+                                                      email=v['email'], phone=v['phone'],
+                                                      country_id=v['country_id'],
+                                                      street=v['street'],
+                                                      zip=v['zip'], city=v['city'])
+    return True
+                #dir(fake)
 
 # ['_Generator__config', '_Generator__format_token', '__class__', '__delattr__', '__dict__',
 #  '__doc__', '__format__', '__getattribute__', '__hash__', '__init__', '__module__', '__new__',

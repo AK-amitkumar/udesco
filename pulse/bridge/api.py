@@ -1,5 +1,4 @@
 
-
 '''
    _____ __________.___  ___________                   __  .__
   /  _  \\______   \   | \_   _____/_ __  ____   _____/  |_|__| ____   ____   ______
@@ -11,28 +10,14 @@ xmlrpc wrapper functions for reading and writing to ERP
 HITS /home/iron-aiden/udesco/odoo10/odoo/service/wsgi_server.py
 '''
 
-# following is NOT postgres database settings - it is odoo settings
-# pg database connections are supposed to match with odoo10/debian/odoo.conf
-
-
-# import oerplib
-#
-#
-# def auth_erp():
-#     oerp = oerplib.OERP(server='localhost', database=DB, protocol='xmlrpc', port=8069)
-#     try:
-#         uid = oerp.login(user=USERNAME, passwd=PASSWORD)
-#     except:
-#         init_uid = oerp.login(user='admin', passwd='admin')
-#         user_obj = oerp.get('res.users')
-#         user_obj.write([1], {'login': USERNAME, 'password': PASSWORD})
-#         uid = oerp.login(user=USERNAME, passwd=PASSWORD)
-#     return uid, oerp
-
-
-
 
 import xmlrpclib
+
+
+import logging
+log = logging.getLogger(__name__)
+
+
 
 #following is NOT postgres database settings - it is odoo settings
 #pg database connections are supposed to match with odoo10/debian/odoo.conf
@@ -188,6 +173,7 @@ def create_erp(model,create_dict,username = USERNAME, password = PASSWORD,
     :param limit:
     :return: id of created record
     '''
+    create_dict = {k: v for k, v in create_dict.iteritems() if 'erp' not in k}
     if not uid:
         print 'reauth'
         uid = auth_erp(username = username, password = password, db = db, sock_common = sock_common)
@@ -196,7 +182,7 @@ def create_erp(model,create_dict,username = USERNAME, password = PASSWORD,
 
     return created_id
 
-#CREATE
+#GET OR CREATE
 def get_or_create_erp(model,create_dict,username = USERNAME, password = PASSWORD,
                     db = DB, uid = UID, sock_models = SOCK_MODELS,sock_common=SOCK_COMMON):
     '''
@@ -212,11 +198,17 @@ def get_or_create_erp(model,create_dict,username = USERNAME, password = PASSWORD
     :param limit:
     :return: id of created record
     '''
+    created = False
     if not uid:
         print 'reauth'
         uid = auth_erp(username = username, password = password, db = db, sock_common = sock_common)
     #Following is from the search function
     try:
+        # for key in create_dict:
+        #  if 'erp' in key:
+        #      create_dict.pop(key)
+        create_dict = {k:v for k,v in create_dict.iteritems() if 'erp' not in k}
+
         ids = sock_models.execute_kw(db, uid, password,
             model, 'search',
             [[(k,'=', v) for k, v in create_dict.iteritems()]], #.items()turns the dictionary into a list of tuples
@@ -227,10 +219,11 @@ def get_or_create_erp(model,create_dict,username = USERNAME, password = PASSWORD
         if "Fault 2: 'None'" in str(e):
             try:
                 got_or_created_id = sock_models.execute_kw(db, uid, password, model, 'create', [create_dict])
+                created = True
             except Exception as e:
                 print e
                 raise
-            return got_or_created_id
+            return got_or_created_id, created 
         else:
             raise
     if ids:
@@ -238,10 +231,11 @@ def get_or_create_erp(model,create_dict,username = USERNAME, password = PASSWORD
     else:
         try:
             got_or_created_id = sock_models.execute_kw(db, uid, password, model, 'create', [create_dict])
+            created = True
         except Exception as e:
             print e
             raise
-    return got_or_created_id
+    return got_or_created_id, created
 
 
 #UPDATE RECORD
@@ -260,12 +254,15 @@ def write_erp(model,ids,update_dict,username = USERNAME, password = PASSWORD,
     :param limit:
     :return: id of created record
     '''
+    update_dict = {k: v for k, v in update_dict.iteritems() if 'erp' not in k}
     ids = [ids] if isinstance(ids, (int, long)) else ids
     if not uid:
         print 'reauth'
         uid = auth_erp(username = username, password = password, db = db, sock_common = sock_common)
     #sock_models = xmlrpclib.ServerProxy('http://localhost:8069/xmlrpc/2/object')
     sock_models.execute_kw(db, uid, password, model, 'write', [ids, update_dict])
+
+
 
 #DELETE RECORD
 def delete_erp(model,ids,username = USERNAME, password = PASSWORD,
